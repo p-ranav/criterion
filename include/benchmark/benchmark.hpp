@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-#include "indicators.hpp"
+#include <benchmark/indicators.hpp>
 
 template <class Fn>
 class benchmark {
@@ -41,7 +41,7 @@ class benchmark {
     return result;
   }
 
-  void update_iterations(Fn fn) {
+  auto update_iterations(Fn fn) {
     const auto early_estimate_execution_time = estimate_execution_time(fn);
 
     if (early_estimate_execution_time < 100) {
@@ -61,14 +61,15 @@ class benchmark {
     }
     else if (early_estimate_execution_time < 1000000000) {
       // milliseconds
-      num_iterations_ = 4000;
+      num_iterations_ = 10;
       max_num_runs_ = 100;
     }
     else {
       // seconds
-      num_iterations_ = 1000;
+      num_iterations_ = 1;
       max_num_runs_ = 10;
     }
+    return early_estimate_execution_time;
   }
 
   std::string duration_to_string(const long double& ns) {
@@ -93,7 +94,7 @@ public:
   benchmark(const std::string& name, Fn fn) {
     using namespace std::chrono;
 
-    update_iterations(fn);
+    const auto early_estimate_execution_time = update_iterations(fn);
 
     long double lowest_rsd = 100;
     std::size_t num_iterations_lowest_rsd = 0;
@@ -110,9 +111,11 @@ public:
     using namespace indicators;
     ProgressSpinner spinner{
       option::PrefixText{name + " "},
-      option::ForegroundColor{Color::yellow},
+      option::ForegroundColor{Color::white},
       option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
-      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+      option::ShowElapsedTime{true},
+      option::ShowRemainingTime{true}
     };
 
     while(true) {
@@ -157,11 +160,11 @@ public:
       // Show iteration as postfix text
       std::stringstream os;
       os
-        << num_runs << "/" << max_num_runs_ << " "
+        // << num_runs << "/" << max_num_runs_ << " "
         << std::setprecision(3)
         << "μ = "
         << duration_to_string(mean_lowest_rsd) << " ± " << lowest_rsd
-        << "%, N = " << num_iterations_lowest_rsd;
+        << "% [N = " << num_iterations_lowest_rsd << "]";
       spinner.set_option(option::PostfixText{os.str()});
 
       if (num_runs >= max_num_runs_) {
@@ -175,9 +178,9 @@ public:
     std::stringstream os;
     os
       << std::setprecision(3)
-      << "μ = "
+      << "Best Estimate: μ = "
       << duration_to_string(mean_lowest_rsd) << " ± " << lowest_rsd
-      << "%, N = " << num_iterations_lowest_rsd;
+      << "% [N = " << num_iterations_lowest_rsd << "]";
 
     spinner.set_option(option::ForegroundColor{Color::green});
     spinner.set_option(option::PrefixText{"✔ " + name});
