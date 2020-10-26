@@ -169,16 +169,21 @@ public:
         os.str()
       });
 
+      if (num_runs + 1 == max_num_runs_) {
+        // next is last
+        if (lowest_rsd > 10) { // too high, not reliable
+          num_runs = 0;
+          lowest_rsd = 100;
+          num_iterations_lowest_rsd = 0;
+          mean_lowest_rsd = 0;
+        }
+      }
+
       // update progress bar
       bar.set_progress(num_runs);
 
-      if (num_runs > max_num_runs_) {
-        if (lowest_rsd > 10) { // too high, not reliable
-          num_runs = 0;
-        }
-        else {
-          break;
-        }
+      if (num_runs == max_num_runs_) {
+        break;
       }
     }
 
