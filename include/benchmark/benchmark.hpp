@@ -26,9 +26,9 @@ class benchmark {
     bool first_run{true};
     std::size_t warmup_runs = 10;
     for (std::size_t i = 0; i < warmup_runs; i++) {
-      const auto start = high_resolution_clock::now();
+      const auto start = steady_clock::now();
       fn();
-      const auto end = high_resolution_clock::now();
+      const auto end = steady_clock::now();
       const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       if (first_run) {
         result = execution_time;
@@ -108,19 +108,22 @@ public:
     indicators::show_console_cursor(false);
 
     using namespace indicators;
-    BlockProgressBar bar{
-      option::BarWidth{20},
+    ProgressSpinner spinner{
       option::PrefixText{name + " "},
-      option::ForegroundColor{Color::white},
-      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-      option::MaxProgress{max_num_runs_}
+      option::ForegroundColor{Color::yellow},
+      option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
+      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
     };
 
     while(true) {
 
+      const auto current_max_num_runs = max_num_runs_;
       update_iterations(fn);
 
-      bar.set_option(option::MaxProgress{max_num_runs_});
+      if (max_num_runs_ < current_max_num_runs)
+        max_num_runs_ = current_max_num_runs;
+
+      spinner.set_option(option::MaxProgress{max_num_runs_});
 
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
@@ -149,7 +152,7 @@ public:
         mean_lowest_rsd = mean;
       }
 
-      bar.set_progress(num_runs);
+      spinner.set_progress(num_runs);
 
       // Show iteration as postfix text
       std::stringstream os;
@@ -159,16 +162,29 @@ public:
         << "μ = "
         << duration_to_string(mean_lowest_rsd) << " ± " << lowest_rsd
         << "%, N = " << num_iterations_lowest_rsd;
-      bar.set_option(option::PostfixText{os.str()});
+      spinner.set_option(option::PostfixText{os.str()});
 
       if (num_runs >= max_num_runs_) {
-        bar.mark_as_completed();
         break;
       }
 
       durations.clear();
       num_runs += 1;
     }
+
+    std::stringstream os;
+    os
+      << std::setprecision(3)
+      << "μ = "
+      << duration_to_string(mean_lowest_rsd) << " ± " << lowest_rsd
+      << "%, N = " << num_iterations_lowest_rsd;
+
+    spinner.set_option(option::ForegroundColor{Color::green});
+    spinner.set_option(option::PrefixText{"✔ " + name});
+    spinner.set_option(option::ShowSpinner{false});
+    spinner.set_option(option::ShowPercentage{false});
+    spinner.set_option(option::PostfixText{os.str()});
+    spinner.mark_as_completed();
 
     // Show cursor
     indicators::show_console_cursor(true);
