@@ -31,3 +31,9 @@ BENCHMARK("Vector sort #4")
 {
   auto result = sorted(vec4);
 }
+
+// Example output on Macbook Pro 15 2019
+// ✔ vector_sort.cpp:15 [Vector sort #1] [02m:06s<00m:00s] μ = 110ns ± 0.679%
+// ✔ vector_sort.cpp:20 [Vector sort #2] [02m:46s<00m:00s] μ = 201ns ± 1.46%
+// ✔ vector_sort.cpp:25 [Vector sort #3] [02m:48s<00m:00s] μ = 244ns ± 1.34%
+// ✔ vector_sort.cpp:30 [Vector sort #4] [01m:48s<00m:00s] μ = 1.25us ± 0.47%
