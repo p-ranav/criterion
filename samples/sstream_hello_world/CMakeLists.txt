@@ -26,5 +26,5 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(SstreamHelloWorld ${sources})
 target_include_directories(SstreamHelloWorld PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(SstreamHelloWorld PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "sstream_hello_world")
+set_target_properties(SstreamHelloWorld PROPERTIES CXX_STANDARD 11 OUTPUT_NAME "sstream_hello_world")
 target_link_libraries(SstreamHelloWorld Benchmark)

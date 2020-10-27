@@ -26,5 +26,5 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(LargeVectorAllocation ${sources})
 target_include_directories(LargeVectorAllocation PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(LargeVectorAllocation PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "large_vector_allocation")
+set_target_properties(LargeVectorAllocation PROPERTIES CXX_STANDARD 11 OUTPUT_NAME "large_vector_allocation")
 target_link_libraries(LargeVectorAllocation Benchmark)

@@ -9,7 +9,6 @@
 #include <numeric>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <sstream>
 #include <thread>
 #include <utility>
@@ -25,17 +24,13 @@
 #endif
 
 struct benchmark_config {
-  std::string_view name;
-  std::string_view file;
-  int line;
+  std::string name;
   void (*fn)();
 };
 
 class benchmark {
 
   std::string name_{""};
-  std::string file_{""};
-  int line_{0};
   using Fn = void(*)();
   Fn fn_;
 
@@ -115,8 +110,6 @@ public:
 
   benchmark(const benchmark_config& config): 
     name_(config.name), 
-    file_(config.file),
-    line_(config.line), 
     fn_(config.fn) {
 
     using namespace std::chrono;
@@ -124,7 +117,7 @@ public:
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_measurement_error = estimate_measurement_error();
 
-    const std::string prefix = file_ + ":" + std::to_string(line_) + " [" + name_ + "]";
+    const std::string prefix = name_;
     std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
     using namespace indicators;
@@ -263,7 +256,6 @@ void execute_registered_functions();
       { /* called once before main */                                  \
         register_function(benchmark_config {                           \
           .name = Name,                                                \
-          .file = __FILENAME__, .line = __LINE__,                      \
           .fn = CONCAT(_registered_fun_, __LINE__)});                  \
       }                                                                \
   } CONCAT(_register_struct_instance_, __LINE__);                      \
