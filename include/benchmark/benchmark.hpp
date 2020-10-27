@@ -42,6 +42,20 @@ class benchmark {
   std::size_t num_iterations_{0};
   std::size_t max_num_runs_{0};
 
+  long double estimate_measurement_error() {
+    using namespace std::chrono;
+    std::vector<long double> durations;
+
+    for (std::size_t i = 0; i < 10; i++) {
+      const auto start = steady_clock::now();
+      // do nothing
+      const auto end = steady_clock::now();
+      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      durations.push_back(execution_time);
+    }
+    return std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
+  }
+
   long double estimate_execution_time(Fn fn) {
     using namespace std::chrono;
 
@@ -106,6 +120,9 @@ public:
 
     using namespace std::chrono;
 
+    // run empty function to estimate minimum delay in scheduling and executing user function
+    const auto estimated_measurement_error = estimate_measurement_error();
+
     const std::string prefix = file_ + ":" + std::to_string(line_) + " [" + name_ + "]";
 
     using namespace indicators;
@@ -123,8 +140,8 @@ public:
     spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
-    std::size_t num_iterations_lowest_rsd = 0;
     long double mean_lowest_rsd = 0;
+    bool first_run{true};
 
     std::size_t num_runs = 0;
     spinner.set_progress(num_runs);
@@ -141,7 +158,7 @@ public:
         fn_();
         const auto end = high_resolution_clock::now();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
-        durations[i] = execution_time;
+        durations[i] = std::abs(execution_time - estimated_measurement_error);
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
@@ -154,12 +171,33 @@ public:
       const long double standard_deviation = std::sqrt(variance);
       const long double relative_standard_deviation = standard_deviation * 100 / mean;
 
-      // Save record of lowest RSD
-      const auto current_lowest_rsd = lowest_rsd;
-      lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
-      if (lowest_rsd < current_lowest_rsd) {
-        num_iterations_lowest_rsd = num_iterations_;
+      if (first_run) {
+        lowest_rsd = relative_standard_deviation;
         mean_lowest_rsd = mean;
+        first_run = false;
+      }
+      else {
+        // Save record of lowest RSD
+        const auto current_lowest_rsd = lowest_rsd;
+        lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
+        if (lowest_rsd < current_lowest_rsd) {
+          // There's a new LOWEST relative standard deviation
+
+          // Check percentage difference between current mean and lowest mean
+          const auto percentage_difference = std::abs((mean - mean_lowest_rsd) * 100 / mean);
+
+          if (percentage_difference < 5) { // within 5%
+            mean_lowest_rsd = mean; // OK let's use this as the new estimate
+          }
+          else if (mean < mean_lowest_rsd) { // new mean is lower by more than 5%
+            mean_lowest_rsd = mean; // OK let's use this as the new estimate
+          } 
+          else {
+            lowest_rsd = current_lowest_rsd; // go back to old estimate
+          }
+        } else {
+          lowest_rsd = current_lowest_rsd; // go back to old estimate
+        }
       }
 
       spinner.set_progress(num_runs);
@@ -219,7 +257,10 @@ void execute_registered_functions();
   {                                                                    \
       CONCAT(_register_struct_, __LINE__)()                            \
       { /* called once before main */                                  \
-        register_function(benchmark_config { .name = Name, .file = __FILENAME__, .line = __LINE__, .fn = CONCAT(_registered_fun_, __LINE__)});   \
+        register_function(benchmark_config {                           \
+          .name = Name,                                                \
+          .file = __FILENAME__, .line = __LINE__,                      \
+          .fn = CONCAT(_registered_fun_, __LINE__)});                  \
       }                                                                \
   } CONCAT(_register_struct_instance_, __LINE__);                      \
   }                                                                    \
