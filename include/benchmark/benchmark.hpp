@@ -207,7 +207,7 @@ public:
         << " [N = " << max_num_runs_ * num_iterations_ << "]";
       spinner.set_option(option::PostfixText{os.str()});
 
-      if (num_runs >= max_num_runs_ || lowest_rsd < 0.00001) {
+      if (num_runs >= max_num_runs_) {
         break;
       }
 

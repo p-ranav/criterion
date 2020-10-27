@@ -25,11 +25,8 @@ static auto split(const std::string& string, const std::string& delimiter)
   return result;
 }
 
-BENCHMARK("string split")
+BENCHMARK("string_split/csv")
 {
   std::string greet = "Year,Make,Model,Description,Price\n1997,Ford,E350,\"ac, abs, moon\",3000.00";
   auto result = split(greet, ",");
 }
-
-// Example output on Macbook Pro 2019
-// ✔ string_split.cpp:28 [string split] [01m:07s<00m:00s] μ = 3.64us ± 0.294%
