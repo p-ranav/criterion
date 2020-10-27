@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <csignal>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -124,10 +125,14 @@ public:
     const auto estimated_measurement_error = estimate_measurement_error();
 
     const std::string prefix = file_ + ":" + std::to_string(line_) + " [" + name_ + "]";
+    std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
     using namespace indicators;
+
+    show_console_cursor(false);
+
     ProgressSpinner spinner{
-      option::PrefixText{prefix},
+      option::PrefixText{"  "},
       option::ForegroundColor{Color::white},
       option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
       option::ShowSpinner{false},
@@ -147,9 +152,6 @@ public:
     spinner.set_progress(num_runs);
 
     std::array<long double, 10> durations;
-
-    // Hide cursor
-    indicators::show_console_cursor(false);
 
     while(true) {
       // Benchmark runs
@@ -208,7 +210,8 @@ public:
         << std::setprecision(3)
         << "μ = "
         << duration_to_string(mean_lowest_rsd) 
-        << " ± " << lowest_rsd << "%";
+        << " ± " << lowest_rsd << "%"
+        << " [N = " << max_num_runs_ * num_iterations_ << "]";
       spinner.set_option(option::PostfixText{os.str()});
 
       if (num_runs >= max_num_runs_) {
@@ -223,16 +226,17 @@ public:
       << std::setprecision(3)
       << "μ = "
       << duration_to_string(mean_lowest_rsd) 
-      << " ± " << lowest_rsd << "%";
+      << " ± " << lowest_rsd << "%"
+      << " [N = " << max_num_runs_ * num_iterations_ << "]";
 
     spinner.set_option(option::ForegroundColor{Color::green});
-    spinner.set_option(option::PrefixText{"✔ " + prefix});
     spinner.set_option(option::ShowSpinner{false});
     spinner.set_option(option::ShowPercentage{false});
+    spinner.set_option(option::ShowElapsedTime{false});
+    spinner.set_option(option::ShowRemainingTime{false});
     spinner.set_option(option::PostfixText{os.str()});
     spinner.mark_as_completed();
 
-    // Show cursor
     indicators::show_console_cursor(true);
   }
 };
@@ -268,7 +272,19 @@ void execute_registered_functions();
   /* now actually defined to allow BENCHMARK("name") { ... } syntax */ \
   void detail::CONCAT(_registered_fun_, __LINE__)()
 
+static inline void signal_handler(int signal) {
+  indicators::show_console_cursor(true);
+  std::cout << termcolor::reset;
+  exit(signal);
+}
+
 #define BENCHMARK_MAIN \
 int main() { \
+  std::signal(SIGTERM, signal_handler); \
+  std::signal(SIGSEGV, signal_handler); \
+  std::signal(SIGINT, signal_handler); \
+  std::signal(SIGILL, signal_handler); \
+  std::signal(SIGABRT, signal_handler); \
+  std::signal(SIGFPE, signal_handler); \
   execute_registered_functions(); \
 }
