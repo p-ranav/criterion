@@ -108,9 +108,9 @@ class benchmark {
 
 public:
 
-  benchmark(const benchmark_config& config): 
-    name_(config.name), 
-    fn_(config.fn) {
+  benchmark(const std::string& name, Fn fn): 
+    name_(name), 
+    fn_(fn) {
 
     using namespace std::chrono;
 
