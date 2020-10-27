@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <iomanip>
@@ -9,7 +10,6 @@
 #include <string>
 #include <sstream>
 #include <thread>
-#include <vector>
 
 #include <benchmark/indicators.hpp>
 
@@ -24,7 +24,7 @@ class benchmark {
 
     long double result;
     bool first_run{true};
-    std::size_t warmup_runs = 10;
+    std::size_t warmup_runs = 3;
     for (std::size_t i = 0; i < warmup_runs; i++) {
       const auto start = steady_clock::now();
       fn();
@@ -41,35 +41,20 @@ class benchmark {
     return result;
   }
 
-  auto update_iterations(Fn fn) {
+  void update_iterations(Fn fn) {
     const auto early_estimate_execution_time = estimate_execution_time(fn);
 
-    if (early_estimate_execution_time < 100) {
-      // tens of nanoseconds
-      num_iterations_ = 128000;
-      max_num_runs_ = 10000;
-    }
-    else if (early_estimate_execution_time < 1000) {
-      // hundreds of nanoseconds
-      num_iterations_ = 64000;
-      max_num_runs_ = 5000;
-    }
-    else if (early_estimate_execution_time < 1000000) {
-      // microseconds
-      num_iterations_ = 32000;
-      max_num_runs_ = 1000;
-    }
-    else if (early_estimate_execution_time < 1000000000) {
-      // milliseconds
-      num_iterations_ = 10;
-      max_num_runs_ = 100;
-    }
-    else {
-      // seconds
-      num_iterations_ = 1;
-      max_num_runs_ = 10;
-    }
-    return early_estimate_execution_time;
+    num_iterations_ = 10; // fixed
+    const auto min_runs = 10;
+    const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
+    const auto one_minute = 6E10;
+
+    const auto benchmark_time = std::max(double(min_benchmark_time), one_minute);
+    const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
+
+    max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
+
+    max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
   std::string duration_to_string(const long double& ns) {
@@ -94,54 +79,48 @@ public:
   benchmark(const std::string& name, Fn fn) {
     using namespace std::chrono;
 
-    const auto early_estimate_execution_time = update_iterations(fn);
+    using namespace indicators;
+    ProgressSpinner spinner{
+      option::PrefixText{"[" + name + "]"},
+      option::ForegroundColor{Color::white},
+      option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
+      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+      option::ShowSpinner{false},
+      option::ShowElapsedTime{true},
+      option::ShowRemainingTime{true}
+    };
+
+    spinner.set_option(option::MaxProgress{max_num_runs_});
+    update_iterations(fn);
+    spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
     std::size_t num_iterations_lowest_rsd = 0;
     long double mean_lowest_rsd = 0;
 
     std::size_t num_runs = 0;
+    spinner.set_progress(num_runs);
 
-    std::vector<long double> durations;
-    durations.reserve(num_iterations_);
+    std::array<long double, 10> durations;
 
     // Hide cursor
     indicators::show_console_cursor(false);
 
-    using namespace indicators;
-    ProgressSpinner spinner{
-      option::PrefixText{name + " "},
-      option::ForegroundColor{Color::white},
-      option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
-      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-      option::ShowElapsedTime{true},
-      option::ShowRemainingTime{true}
-    };
-
     while(true) {
-
-      const auto current_max_num_runs = max_num_runs_;
-      update_iterations(fn);
-
-      if (max_num_runs_ < current_max_num_runs)
-        max_num_runs_ = current_max_num_runs;
-
-      spinner.set_option(option::MaxProgress{max_num_runs_});
-
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
         const auto start = high_resolution_clock::now();
         fn();
         const auto end = high_resolution_clock::now();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
-        durations.push_back(execution_time);
+        durations[i] = execution_time;
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
 
       long double E = 0;
       for (std::size_t i = 0; i < size; i++) {
-        E += std::pow(durations.at(i) - mean, 2);
+        E += std::pow(durations[i] - mean, 2);
       }
       const long double variance = E / size;
       const long double standard_deviation = std::sqrt(variance);
@@ -163,24 +142,23 @@ public:
         // << num_runs << "/" << max_num_runs_ << " "
         << std::setprecision(3)
         << "μ = "
-        << duration_to_string(mean_lowest_rsd) << " ± " << lowest_rsd
-        << "% [N = " << num_iterations_lowest_rsd << "]";
+        << duration_to_string(mean_lowest_rsd) 
+        << " ± " << lowest_rsd << "%";
       spinner.set_option(option::PostfixText{os.str()});
 
       if (num_runs >= max_num_runs_) {
         break;
       }
 
-      durations.clear();
       num_runs += 1;
     }
 
     std::stringstream os;
     os
       << std::setprecision(3)
-      << "Best Estimate: μ = "
-      << duration_to_string(mean_lowest_rsd) << " ± " << lowest_rsd
-      << "% [N = " << num_iterations_lowest_rsd << "]";
+      << "μ = "
+      << duration_to_string(mean_lowest_rsd) 
+      << " ± " << lowest_rsd << "%";
 
     spinner.set_option(option::ForegroundColor{Color::green});
     spinner.set_option(option::PrefixText{"✔ " + name});
