@@ -1,17 +1,17 @@
 #include <benchmark/benchmark.hpp>
 
-static std::vector<std::pair<std::string, benchmark_function>> &
+static std::vector<benchmark_config> &
 registered_functions() {
-  static std::vector<std::pair<std::string, benchmark_function>> v;
+  static std::vector<benchmark_config> v;
   return v;
 }
 
-void register_function(const std::string &name, benchmark_function function) {
-  registered_functions().push_back(std::make_pair(name, function));
+void register_function(const benchmark_config& config) {
+  registered_functions().push_back(config);
 }
 
 void execute_registered_functions() {
-  for (auto& name_fn_pair : registered_functions()) {
-    benchmark(name_fn_pair.first, name_fn_pair.second);
+  for (const auto& config : registered_functions()) {
+    benchmark{config};
   }
 }

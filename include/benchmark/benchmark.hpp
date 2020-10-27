@@ -8,14 +8,35 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <sstream>
 #include <thread>
 #include <utility>
 
 #include <benchmark/indicators.hpp>
 
-template <class Fn>
+#include <string.h>
+
+#if defined(_WIN32)
+#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#else
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#endif
+
+struct benchmark_config {
+  std::string_view name;
+  std::string_view file;
+  int line;
+  void (*fn)();
+};
+
 class benchmark {
+
+  std::string name_{""};
+  std::string file_{""};
+  int line_{0};
+  using Fn = void(*)();
+  Fn fn_;
 
   std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
@@ -77,12 +98,19 @@ class benchmark {
 
 public:
 
-  benchmark(const std::string& name, Fn fn) {
+  benchmark(const benchmark_config& config): 
+    name_(config.name), 
+    file_(config.file),
+    line_(config.line), 
+    fn_(config.fn) {
+
     using namespace std::chrono;
+
+    const std::string prefix = file_ + ":" + std::to_string(line_) + " [" + name_ + "]";
 
     using namespace indicators;
     ProgressSpinner spinner{
-      option::PrefixText{"[" + name + "]"},
+      option::PrefixText{prefix},
       option::ForegroundColor{Color::white},
       option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
       option::ShowSpinner{false},
@@ -91,7 +119,7 @@ public:
     };
 
     spinner.set_option(option::MaxProgress{max_num_runs_});
-    update_iterations(fn);
+    update_iterations(fn_);
     spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
@@ -110,7 +138,7 @@ public:
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
         const auto start = high_resolution_clock::now();
-        fn();
+        fn_();
         const auto end = high_resolution_clock::now();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
         durations[i] = execution_time;
@@ -139,7 +167,6 @@ public:
       // Show iteration as postfix text
       std::stringstream os;
       os
-        // << num_runs << "/" << max_num_runs_ << " "
         << std::setprecision(3)
         << "μ = "
         << duration_to_string(mean_lowest_rsd) 
@@ -161,7 +188,7 @@ public:
       << " ± " << lowest_rsd << "%";
 
     spinner.set_option(option::ForegroundColor{Color::green});
-    spinner.set_option(option::PrefixText{"✔ " + name});
+    spinner.set_option(option::PrefixText{"✔ " + prefix});
     spinner.set_option(option::ShowSpinner{false});
     spinner.set_option(option::ShowPercentage{false});
     spinner.set_option(option::PostfixText{os.str()});
@@ -172,9 +199,7 @@ public:
   }
 };
 
-using benchmark_function = void (*)();
-
-void register_function(const std::string &name, benchmark_function function);
+void register_function(const benchmark_config& config);
 void execute_registered_functions();
 
 #define CONCAT_IMPL(a, b) a##b
@@ -194,7 +219,7 @@ void execute_registered_functions();
   {                                                                    \
       CONCAT(_register_struct_, __LINE__)()                            \
       { /* called once before main */                                  \
-        register_function(Name, CONCAT(_registered_fun_, __LINE__));   \
+        register_function(benchmark_config { .name = Name, .file = __FILENAME__, .line = __LINE__, .fn = CONCAT(_registered_fun_, __LINE__)});   \
       }                                                                \
   } CONCAT(_register_struct_instance_, __LINE__);                      \
   }                                                                    \

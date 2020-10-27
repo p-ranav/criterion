@@ -7,26 +7,27 @@ std::vector<int> sorted(const std::vector<int>& vec) {
   return vec_copy;
 }
 
+std::vector<int> vec1{5, 4, 3, 2, 1};
+std::vector<int> vec2(10, 0);
+std::vector<int> vec3(100, 0);
+std::vector<int> vec4(1000, 0);
+
 BENCHMARK("Vector sort #1")
 {
-  std::vector<int> vec{5, 4, 3, 2, 1};
-  auto result = sorted(vec);
+  auto result = sorted(vec1);
 }
 
 BENCHMARK("Vector sort #2")
 {
-  std::vector<int> vec(10, 0);
-  auto result = sorted(vec); 
+  auto result = sorted(vec2); 
 }
 
 BENCHMARK("Vector sort #3")
 {
-  std::vector<int> vec(100, 0);
-  auto result = sorted(vec); 
+  auto result = sorted(vec3); 
 }
 
 BENCHMARK("Vector sort #4")
 {
-  std::vector<int> vec(1000, 0);
-  auto result = sorted(vec);
+  auto result = sorted(vec4);
 }
