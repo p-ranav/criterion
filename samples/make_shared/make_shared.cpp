@@ -8,12 +8,12 @@ struct Foo {
   float data_3{3.1415f};
 };
 
-BENCHMARK("Create shared_ptr with new")
+BENCHMARK("shared_ptr/new")
 {
   std::shared_ptr<Foo> foo_ptr = std::shared_ptr<Foo>(new Foo());
 }
 
-BENCHMARK("Create shared_ptr with make_shared")
+BENCHMARK("shared_ptr/make_shared")
 {
   std::shared_ptr<Foo> foo_ptr = std::make_shared<Foo>();
 }
