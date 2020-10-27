@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <utility>
 
 #include <benchmark/indicators.hpp>
 
@@ -20,7 +21,7 @@ class benchmark {
   std::size_t num_iterations_{0};
   std::size_t max_num_runs_{0};
 
-  auto estimate_execution_time(Fn fn) {
+  long double estimate_execution_time(Fn fn) {
     using namespace std::chrono;
 
     long double result;
@@ -170,3 +171,38 @@ public:
     indicators::show_console_cursor(true);
   }
 };
+
+using benchmark_function = void (*)();
+
+void register_function(const std::string &name, benchmark_function function);
+void execute_registered_functions();
+
+#define CONCAT_IMPL(a, b) a##b
+#define CONCAT(a, b) CONCAT_IMPL(a, b)
+
+#define BENCHMARK(Name)                                                \
+  static_assert(true, Name " must be string literal");                 \
+  namespace detail                                                     \
+  {                                                                    \
+  /* function we later define */                                       \
+  static void CONCAT(_registered_fun_, __LINE__)();                    \
+                                                                       \
+  namespace /* ensure internal linkage for struct */                   \
+  {                                                                    \
+  /* helper struct for static registration in ctor */                  \
+  struct CONCAT(_register_struct_, __LINE__)                           \
+  {                                                                    \
+      CONCAT(_register_struct_, __LINE__)()                            \
+      { /* called once before main */                                  \
+        register_function(Name, CONCAT(_registered_fun_, __LINE__));   \
+      }                                                                \
+  } CONCAT(_register_struct_instance_, __LINE__);                      \
+  }                                                                    \
+  }                                                                    \
+  /* now actually defined to allow BENCHMARK("name") { ... } syntax */ \
+  void detail::CONCAT(_registered_fun_, __LINE__)()
+
+#define BENCHMARK_MAIN \
+int main() { \
+  execute_registered_functions(); \
+}

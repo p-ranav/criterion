@@ -1,7 +1,7 @@
 #include <string>
 #include <benchmark/benchmark.hpp>
 
-auto split(const std::string& string, const std::string& delimiter)
+static auto split(const std::string& string, const std::string& delimiter)
     -> std::vector<std::string> {
   std::vector<std::string> result;
 
@@ -25,11 +25,8 @@ auto split(const std::string& string, const std::string& delimiter)
   return result;
 }
 
-int main() {
-
-  benchmark("string split", [] {
-    std::string greet = "Year,Make,Model,Description,Price\n1997,Ford,E350,\"ac, abs, moon\",3000.00";
-    return split(greet, ",");
-  });
-
+BENCHMARK("string split")
+{
+  std::string greet = "Year,Make,Model,Description,Price\n1997,Ford,E350,\"ac, abs, moon\",3000.00";
+  auto result = split(greet, ",");
 }
