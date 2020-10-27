@@ -16,6 +16,7 @@
 template <class Fn>
 class benchmark {
 
+  std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
   std::size_t max_num_runs_{0};
 
@@ -24,8 +25,7 @@ class benchmark {
 
     long double result;
     bool first_run{true};
-    std::size_t warmup_runs = 3;
-    for (std::size_t i = 0; i < warmup_runs; i++) {
+    for (std::size_t i = 0; i < warmup_runs_; i++) {
       const auto start = steady_clock::now();
       fn();
       const auto end = steady_clock::now();
@@ -83,7 +83,6 @@ public:
     ProgressSpinner spinner{
       option::PrefixText{"[" + name + "]"},
       option::ForegroundColor{Color::white},
-      option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
       option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
       option::ShowSpinner{false},
       option::ShowElapsedTime{true},
