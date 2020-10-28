@@ -14,26 +14,12 @@
 #include <thread>
 #include <utility>
 
+#include <benchmark/benchmark_config.hpp>
 #include <benchmark/indicators.hpp>
 
-#include <string.h>
-
-#if defined(_WIN32)
-#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
-#else
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#endif
-
-struct benchmark_config {
-  std::string name;
-  std::function<void()> fn;
-};
-
 class benchmark {
-
-  std::string name_{""};
-  using Fn = std::function<void()>;
-  Fn fn_;
+  benchmark_config config_;
+  using Fn = benchmark_config::Fn;
 
   std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
@@ -53,14 +39,16 @@ class benchmark {
     return std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
   }
 
-  long double estimate_execution_time(Fn fn) {
+  long double estimate_execution_time() {
     using namespace std::chrono;
 
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
+      std::chrono::steady_clock::time_point start_timestamp;
+      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
       const auto start = steady_clock::now();
-      fn();
+      config_.fn(start_timestamp, teardown_timestamp);
       const auto end = steady_clock::now();
       const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       if (first_run) {
@@ -74,8 +62,8 @@ class benchmark {
     return result;
   }
 
-  void update_iterations(Fn fn) {
-    const auto early_estimate_execution_time = estimate_execution_time(fn);
+  void update_iterations() {
+    const auto early_estimate_execution_time = estimate_execution_time();
 
     num_iterations_ = 10; // fixed
     const auto min_runs = 10;
@@ -109,16 +97,17 @@ class benchmark {
 
 public:
 
-  benchmark(const std::string& name, Fn fn): 
-    name_(name), 
-    fn_(fn) {
+  benchmark(const benchmark_config& config): 
+    config_(config) {}
+
+  void run() {
 
     using namespace std::chrono;
 
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_measurement_error = estimate_measurement_error();
 
-    const std::string prefix = name_;
+    const std::string prefix = config_.name;
     std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
     using namespace indicators;
@@ -135,7 +124,7 @@ public:
     };
 
     spinner.set_option(option::MaxProgress{max_num_runs_});
-    update_iterations(fn_);
+    update_iterations();
     spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
@@ -150,9 +139,12 @@ public:
     while(true) {
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
-        const auto start = high_resolution_clock::now();
-        fn_();
-        const auto end = high_resolution_clock::now();
+        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+        auto start = steady_clock::now();
+        config_.fn(start, teardown_timestamp);
+        auto end = steady_clock::now();
+        if (teardown_timestamp)
+          end = teardown_timestamp.value();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
         durations[i] = std::abs(execution_time - estimated_measurement_error);
       }
@@ -228,50 +220,3 @@ public:
     indicators::show_console_cursor(true);
   }
 };
-
-void register_function(const benchmark_config& config);
-void execute_registered_functions();
-
-#define CONCAT_IMPL(a, b) a##b
-#define CONCAT(a, b) CONCAT_IMPL(a, b)
-
-#define BENCHMARK(Name)                                                \
-  static_assert(true, Name " must be string literal");                 \
-  namespace detail                                                     \
-  {                                                                    \
-  /* function we later define */                                       \
-  static void CONCAT(_registered_fun_, __LINE__)();                    \
-                                                                       \
-  namespace /* ensure internal linkage for struct */                   \
-  {                                                                    \
-  /* helper struct for static registration in ctor */                  \
-  struct CONCAT(_register_struct_, __LINE__)                           \
-  {                                                                    \
-      CONCAT(_register_struct_, __LINE__)()                            \
-      { /* called once before main */                                  \
-        register_function(benchmark_config {                           \
-          .name = Name,                                                \
-          .fn = CONCAT(_registered_fun_, __LINE__)});                  \
-      }                                                                \
-  } CONCAT(_register_struct_instance_, __LINE__);                      \
-  }                                                                    \
-  }                                                                    \
-  /* now actually defined to allow BENCHMARK("name") { ... } syntax */ \
-  void detail::CONCAT(_registered_fun_, __LINE__)()
-
-static inline void signal_handler(int signal) {
-  indicators::show_console_cursor(true);
-  std::cout << termcolor::reset;
-  exit(signal);
-}
-
-#define BENCHMARK_MAIN \
-int main() { \
-  std::signal(SIGTERM, signal_handler); \
-  std::signal(SIGSEGV, signal_handler); \
-  std::signal(SIGINT, signal_handler); \
-  std::signal(SIGILL, signal_handler); \
-  std::signal(SIGABRT, signal_handler); \
-  std::signal(SIGFPE, signal_handler); \
-  execute_registered_functions(); \
-}

@@ -26,5 +26,5 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(VectorSort ${sources})
 target_include_directories(VectorSort PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(VectorSort PROPERTIES CXX_STANDARD 11 OUTPUT_NAME "vector_sort")
+set_target_properties(VectorSort PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "vector_sort")
 target_link_libraries(VectorSort Benchmark)

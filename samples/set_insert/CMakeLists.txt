@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(Parameterized LANGUAGES CXX)
+project(SetInsert LANGUAGES CXX)
 
 # --- Import tools ----
 
@@ -24,7 +24,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-add_executable(Parameterized ${sources})
-target_include_directories(Parameterized PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(Parameterized PROPERTIES CXX_STANDARD 11 OUTPUT_NAME "parameterized")
-target_link_libraries(Parameterized Benchmark)
+add_executable(SetInsert ${sources})
+target_include_directories(SetInsert PRIVATE ${Benchmark_INCLUDE_DIRS})
+set_target_properties(SetInsert PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "set_insert")
+target_link_libraries(SetInsert Benchmark)

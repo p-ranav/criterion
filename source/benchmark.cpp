@@ -1,17 +1,18 @@
 #include <benchmark/benchmark.hpp>
+#include <benchmark/benchmark_config.hpp>
 
 static std::vector<benchmark_config> &
-registered_functions() {
+registered_benchmarks() {
   static std::vector<benchmark_config> v;
   return v;
 }
 
-void register_function(const benchmark_config& config) {
-  registered_functions().push_back(config);
+void register_benchmark(const benchmark_config& config) {
+  registered_benchmarks().push_back(config);
 }
 
-void execute_registered_functions() {
-  for (const auto& config : registered_functions()) {
-    benchmark(config.name, config.fn);
+void execute_registered_benchmarks() {
+  for (const auto& config : registered_benchmarks()) {
+    benchmark{config}.run();
   }
 }

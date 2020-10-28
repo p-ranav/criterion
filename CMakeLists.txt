@@ -56,7 +56,7 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/
 message(DEBUG "Adding library")
 add_library(Benchmark ${headers} ${sources})
 SET_TARGET_PROPERTIES(Benchmark PROPERTIES OUTPUT_NAME benchmark)
-set_target_properties(Benchmark PROPERTIES CXX_STANDARD 11)
+set_target_properties(Benchmark PROPERTIES CXX_STANDARD 17)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(Benchmark PUBLIC "$<$<BOOL:${MSVC}>:/permissive->")

@@ -1,27 +1,18 @@
 #include <vector>
-#include <benchmark/benchmark.hpp>
+#include <benchmark/registration.hpp>
 
-std::vector<int> sorted(const std::vector<int>& vec) {
-  auto vec_copy = vec;
-  std::sort(vec_copy.begin(), vec_copy.end());
-  return vec_copy;
-}
-
-std::vector<int> vec10(10, 0);
-std::vector<int> vec100(100, 0);
-std::vector<int> vec1000(1000, 0);
-
-BENCHMARK("vector_sort/10")
+BENCHMARK("vector_sort/11")
 {
-  auto result = sorted(vec10); 
-}
+  SETUP_BENCHMARK(
+    std::vector<int> vec;
+    for (auto& i : {5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5})
+      vec.push_back(i);
+  )
 
-BENCHMARK("vector_sort/100")
-{
-  auto result = sorted(vec100); 
-}
+  // Code being benchmarked
+  std::sort(vec.begin(), vec.end());
 
-BENCHMARK("vector_sort/1000")
-{
-  auto result = sorted(vec1000);
+  TEARDOWN_BENCHMARK(
+    vec.clear();
+  )
 }

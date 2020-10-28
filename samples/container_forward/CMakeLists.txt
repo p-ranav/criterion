@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(StringSplit LANGUAGES CXX)
+project(ContainerForward LANGUAGES CXX)
 
 # --- Import tools ----
 
@@ -24,7 +24,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-add_executable(StringSplit ${sources})
-target_include_directories(StringSplit PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(StringSplit PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "string_split")
-target_link_libraries(StringSplit Benchmark)
+add_executable(ContainerForward ${sources})
+target_include_directories(ContainerForward PRIVATE ${Benchmark_INCLUDE_DIRS})
+set_target_properties(ContainerForward PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "container_forward")
+target_link_libraries(ContainerForward Benchmark)
