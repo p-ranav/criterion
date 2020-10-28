@@ -12,6 +12,6 @@ void register_function(const benchmark_config& config) {
 
 void execute_registered_functions() {
   for (const auto& config : registered_functions()) {
-    benchmark(config.name, config.fn);
+    benchmark(config.name, config.fn, config.setup_duration);
   }
 }

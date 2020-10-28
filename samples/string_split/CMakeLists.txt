@@ -26,5 +26,5 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(StringSplit ${sources})
 target_include_directories(StringSplit PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(StringSplit PROPERTIES CXX_STANDARD 11 OUTPUT_NAME "string_split")
+set_target_properties(StringSplit PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "string_split")
 target_link_libraries(StringSplit Benchmark)

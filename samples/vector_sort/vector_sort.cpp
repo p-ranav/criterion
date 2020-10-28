@@ -7,12 +7,17 @@ std::vector<int> sorted(const std::vector<int>& vec) {
   return vec_copy;
 }
 
-std::vector<int> vec10(10, 0);
+// std::vector<int> vec10(10, 0);
 std::vector<int> vec100(100, 0);
 std::vector<int> vec1000(1000, 0);
 
 BENCHMARK("vector_sort/10")
 {
+
+  SETUP_BENCHMARK(
+    std::vector<int> vec10(10, 0);
+  )
+
   auto result = sorted(vec10); 
 }
 

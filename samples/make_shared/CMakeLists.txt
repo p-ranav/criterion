@@ -26,5 +26,5 @@ file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(MakeShared ${sources})
 target_include_directories(MakeShared PRIVATE ${Benchmark_INCLUDE_DIRS})
-set_target_properties(MakeShared PROPERTIES CXX_STANDARD 11 OUTPUT_NAME "make_shared")
+set_target_properties(MakeShared PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "make_shared")
 target_link_libraries(MakeShared Benchmark)

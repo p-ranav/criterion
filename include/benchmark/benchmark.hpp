@@ -26,14 +26,16 @@
 
 struct benchmark_config {
   std::string name;
-  std::function<void()> fn;
+  std::function<void(long double&)> fn;
+  std::reference_wrapper<long double> setup_duration;
 };
 
 class benchmark {
 
   std::string name_{""};
-  using Fn = std::function<void()>;
+  using Fn = std::function<void(long double&)>;
   Fn fn_;
+  std::reference_wrapper<long double> setup_duration_;
 
   std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
@@ -60,9 +62,10 @@ class benchmark {
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
       const auto start = steady_clock::now();
-      fn();
+      fn(setup_duration_.get());
       const auto end = steady_clock::now();
-      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count()) 
+        - setup_duration_.get();
       if (first_run) {
         result = execution_time;
         first_run = false;
@@ -109,9 +112,10 @@ class benchmark {
 
 public:
 
-  benchmark(const std::string& name, Fn fn): 
+  benchmark(const std::string& name, Fn fn, long double& setup_duration): 
     name_(name), 
-    fn_(fn) {
+    fn_(fn),
+    setup_duration_(setup_duration) {
 
     using namespace std::chrono;
 
@@ -151,9 +155,10 @@ public:
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
         const auto start = high_resolution_clock::now();
-        fn_();
+        fn_(setup_duration_.get());
         const auto end = high_resolution_clock::now();
-        const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
+        const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count()
+          - setup_duration_.get();
         durations[i] = std::abs(execution_time - estimated_measurement_error);
       }
       auto size = num_iterations_;
@@ -240,7 +245,8 @@ void execute_registered_functions();
   namespace detail                                                     \
   {                                                                    \
   /* function we later define */                                       \
-  static void CONCAT(_registered_fun_, __LINE__)();                    \
+  static void CONCAT(_registered_fun_, __LINE__)(long double&);                    \
+  static long double CONCAT(CONCAT(_registered_fun_, __LINE__), _setup_duration) = 0; \
                                                                        \
   namespace /* ensure internal linkage for struct */                   \
   {                                                                    \
@@ -251,13 +257,21 @@ void execute_registered_functions();
       { /* called once before main */                                  \
         register_function(benchmark_config {                           \
           .name = Name,                                                \
-          .fn = CONCAT(_registered_fun_, __LINE__)});                  \
+          .fn = CONCAT(_registered_fun_, __LINE__),                  \
+          .setup_duration = CONCAT(CONCAT(_registered_fun_, __LINE__), _setup_duration)}); \
       }                                                                \
   } CONCAT(_register_struct_instance_, __LINE__);                      \
   }                                                                    \
   }                                                                    \
   /* now actually defined to allow BENCHMARK("name") { ... } syntax */ \
-  void detail::CONCAT(_registered_fun_, __LINE__)()
+  void detail::CONCAT(_registered_fun_, __LINE__)(                     \
+    [[maybe_unused]]long double & setup_duration) \
+
+#define SETUP_BENCHMARK(Code) \
+  const auto start = std::chrono::steady_clock::now(); \
+  Code \
+  const auto end = std::chrono::steady_clock::now(); \
+  setup_duration = static_cast<long double>(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
 
 static inline void signal_handler(int signal) {
   indicators::show_console_cursor(true);
