@@ -45,12 +45,11 @@ class benchmark {
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
+      std::chrono::steady_clock::time_point start_timestamp;
       std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-      auto start = steady_clock::now();
-      config_.fn(start, teardown_timestamp);
-      auto end = steady_clock::now();
-      if (teardown_timestamp)
-        end = teardown_timestamp.value();
+      const auto start = steady_clock::now();
+      config_.fn(start_timestamp, teardown_timestamp);
+      const auto end = steady_clock::now();
       const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       if (first_run) {
         result = execution_time;
