@@ -9,6 +9,7 @@ BENCHMARK("vector_sort/11")
       vec.push_back(i);
   )
 
+  // Code being benchmarked
   std::sort(vec.begin(), vec.end());
 
   TEARDOWN_BENCHMARK(
