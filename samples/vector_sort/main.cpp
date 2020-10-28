@@ -1,2 +1,2 @@
-#include <benchmark/benchmark.hpp>
+#include <benchmark/registration.hpp>
 BENCHMARK_MAIN

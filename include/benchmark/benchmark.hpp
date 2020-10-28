@@ -62,6 +62,7 @@ class benchmark {
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
       const auto start = steady_clock::now();
+      setup_duration_.get() = 0;
       fn(setup_duration_.get());
       const auto end = steady_clock::now();
       const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count()) 
@@ -155,11 +156,13 @@ public:
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
         const auto start = high_resolution_clock::now();
+        setup_duration_.get() = 0;
         fn_(setup_duration_.get());
         const auto end = high_resolution_clock::now();
-        const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count()
-          - setup_duration_.get();
-        durations[i] = std::abs(execution_time - estimated_measurement_error);
+        const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
+        durations[i] = std::abs(execution_time - estimated_measurement_error - setup_duration_.get());
+        if (setup_duration_.get() > 0)
+          durations[i] -= estimated_measurement_error;
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
@@ -233,59 +236,3 @@ public:
     indicators::show_console_cursor(true);
   }
 };
-
-void register_function(const benchmark_config& config);
-void execute_registered_functions();
-
-#define CONCAT_IMPL(a, b) a##b
-#define CONCAT(a, b) CONCAT_IMPL(a, b)
-
-#define BENCHMARK(Name)                                                \
-  static_assert(true, Name " must be string literal");                 \
-  namespace detail                                                     \
-  {                                                                    \
-  /* function we later define */                                       \
-  static void CONCAT(_registered_fun_, __LINE__)(long double&);                    \
-  static long double CONCAT(CONCAT(_registered_fun_, __LINE__), _setup_duration) = 0; \
-                                                                       \
-  namespace /* ensure internal linkage for struct */                   \
-  {                                                                    \
-  /* helper struct for static registration in ctor */                  \
-  struct CONCAT(_register_struct_, __LINE__)                           \
-  {                                                                    \
-      CONCAT(_register_struct_, __LINE__)()                            \
-      { /* called once before main */                                  \
-        register_function(benchmark_config {                           \
-          .name = Name,                                                \
-          .fn = CONCAT(_registered_fun_, __LINE__),                  \
-          .setup_duration = CONCAT(CONCAT(_registered_fun_, __LINE__), _setup_duration)}); \
-      }                                                                \
-  } CONCAT(_register_struct_instance_, __LINE__);                      \
-  }                                                                    \
-  }                                                                    \
-  /* now actually defined to allow BENCHMARK("name") { ... } syntax */ \
-  void detail::CONCAT(_registered_fun_, __LINE__)(                     \
-    [[maybe_unused]]long double & setup_duration) \
-
-#define SETUP_BENCHMARK(Code) \
-  const auto start = std::chrono::steady_clock::now(); \
-  Code \
-  const auto end = std::chrono::steady_clock::now(); \
-  setup_duration = static_cast<long double>(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
-
-static inline void signal_handler(int signal) {
-  indicators::show_console_cursor(true);
-  std::cout << termcolor::reset;
-  exit(signal);
-}
-
-#define BENCHMARK_MAIN \
-int main() { \
-  std::signal(SIGTERM, signal_handler); \
-  std::signal(SIGSEGV, signal_handler); \
-  std::signal(SIGINT, signal_handler); \
-  std::signal(SIGILL, signal_handler); \
-  std::signal(SIGABRT, signal_handler); \
-  std::signal(SIGFPE, signal_handler); \
-  execute_registered_functions(); \
-}
