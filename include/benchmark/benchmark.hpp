@@ -178,14 +178,8 @@ public:
         if (lowest_rsd < current_lowest_rsd) {
           // There's a new LOWEST relative standard deviation
 
-          // Check percentage difference between current mean and lowest mean
-          const auto percentage_difference = std::abs((mean - mean_lowest_rsd) * 100 / mean);
-
-          if (percentage_difference < 5) { // within 5%
-            mean_lowest_rsd = mean; // OK let's use this as the new estimate
-          }
-          else if (mean < mean_lowest_rsd) { // new mean is lower by more than 5%
-            mean_lowest_rsd = mean; // OK let's use this as the new estimate
+          if (mean < mean_lowest_rsd) {
+            mean_lowest_rsd = mean; // new mean is lower
           } 
           else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
