@@ -1,8 +1,17 @@
 #pragma once
+#include <chrono>
 #include <benchmark/benchmark.hpp>
+#include <benchmark/benchmark_config.hpp>
+#include <string.h>
 
-void register_function(const benchmark_config& config);
-void execute_registered_functions();
+#if defined(_WIN32)
+#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#else
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#endif
+
+void register_benchmark(const benchmark_config& config);
+void execute_registered_benchmarks();
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
@@ -12,8 +21,7 @@ void execute_registered_functions();
   namespace detail                                                     \
   {                                                                    \
   /* function we later define */                                       \
-  static void CONCAT(_registered_fun_, __LINE__)(long double&);                    \
-  static long double CONCAT(CONCAT(_registered_fun_, __LINE__), _setup_duration) = 0; \
+  static void CONCAT(_registered_fun_, __LINE__)(std::chrono::steady_clock::time_point&, std::optional<std::chrono::steady_clock::time_point>&);        \
                                                                        \
   namespace /* ensure internal linkage for struct */                   \
   {                                                                    \
@@ -22,23 +30,25 @@ void execute_registered_functions();
   {                                                                    \
       CONCAT(_register_struct_, __LINE__)()                            \
       { /* called once before main */                                  \
-        register_function(benchmark_config {                           \
+        register_benchmark(benchmark_config {                          \
           .name = Name,                                                \
-          .fn = CONCAT(_registered_fun_, __LINE__),                  \
-          .setup_duration = CONCAT(CONCAT(_registered_fun_, __LINE__), _setup_duration)}); \
+          .fn = CONCAT(_registered_fun_, __LINE__)});                  \
       }                                                                \
   } CONCAT(_register_struct_instance_, __LINE__);                      \
   }                                                                    \
   }                                                                    \
   /* now actually defined to allow BENCHMARK("name") { ... } syntax */ \
   void detail::CONCAT(_registered_fun_, __LINE__)(                     \
-    [[maybe_unused]]long double & __benchmark_setup_duration) \
+    [[maybe_unused]]std::chrono::steady_clock::time_point & __benchmark_start_timestamp, \
+    [[maybe_unused]]std::optional<std::chrono::steady_clock::time_point>& __benchmark_teardown_timestamp)
 
 #define SETUP_BENCHMARK(...) \
-  const auto __benchmark_setup_start = std::chrono::steady_clock::now(); \
   __VA_ARGS__ \
-  const auto __benchmark_setup_end = std::chrono::steady_clock::now(); \
-  __benchmark_setup_duration = static_cast<long double>(std::chrono::duration_cast<std::chrono::nanoseconds>(__benchmark_setup_end - __benchmark_setup_start).count());
+  __benchmark_start_timestamp = std::chrono::steady_clock::now(); // updated benchmark start timestamp
+
+#define TEARDOWN_BENCHMARK(...) \
+  __benchmark_teardown_timestamp = std::chrono::steady_clock::now(); \
+  __VA_ARGS__
 
 static inline void signal_handler(int signal) {
   indicators::show_console_cursor(true);
@@ -54,5 +64,5 @@ int main() { \
   std::signal(SIGILL, signal_handler); \
   std::signal(SIGABRT, signal_handler); \
   std::signal(SIGFPE, signal_handler); \
-  execute_registered_functions(); \
+  execute_registered_benchmarks(); \
 }

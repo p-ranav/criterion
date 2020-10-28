@@ -14,28 +14,12 @@
 #include <thread>
 #include <utility>
 
+#include <benchmark/benchmark_config.hpp>
 #include <benchmark/indicators.hpp>
 
-#include <string.h>
-
-#if defined(_WIN32)
-#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
-#else
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#endif
-
-struct benchmark_config {
-  std::string name;
-  std::function<void(long double&)> fn;
-  std::reference_wrapper<long double> setup_duration;
-};
-
 class benchmark {
-
-  std::string name_{""};
-  using Fn = std::function<void(long double&)>;
-  Fn fn_;
-  std::reference_wrapper<long double> setup_duration_;
+  benchmark_config config_;
+  using Fn = benchmark_config::Fn;
 
   std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
@@ -55,18 +39,19 @@ class benchmark {
     return std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
   }
 
-  long double estimate_execution_time(Fn fn) {
+  long double estimate_execution_time() {
     using namespace std::chrono;
 
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
-      const auto start = steady_clock::now();
-      setup_duration_.get() = 0;
-      fn(setup_duration_.get());
-      const auto end = steady_clock::now();
-      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count()) 
-        - setup_duration_.get();
+      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+      auto start = steady_clock::now();
+      config_.fn(start, teardown_timestamp);
+      auto end = steady_clock::now();
+      if (teardown_timestamp)
+        end = teardown_timestamp.value();
+      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       if (first_run) {
         result = execution_time;
         first_run = false;
@@ -78,8 +63,8 @@ class benchmark {
     return result;
   }
 
-  void update_iterations(Fn fn) {
-    const auto early_estimate_execution_time = estimate_execution_time(fn);
+  void update_iterations() {
+    const auto early_estimate_execution_time = estimate_execution_time();
 
     num_iterations_ = 10; // fixed
     const auto min_runs = 10;
@@ -113,17 +98,17 @@ class benchmark {
 
 public:
 
-  benchmark(const std::string& name, Fn fn, long double& setup_duration): 
-    name_(name), 
-    fn_(fn),
-    setup_duration_(setup_duration) {
+  benchmark(const benchmark_config& config): 
+    config_(config) {}
+
+  void run() {
 
     using namespace std::chrono;
 
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_measurement_error = estimate_measurement_error();
 
-    const std::string prefix = name_;
+    const std::string prefix = config_.name;
     std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
     using namespace indicators;
@@ -140,7 +125,7 @@ public:
     };
 
     spinner.set_option(option::MaxProgress{max_num_runs_});
-    update_iterations(fn_);
+    update_iterations();
     spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
@@ -155,14 +140,14 @@ public:
     while(true) {
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
-        const auto start = high_resolution_clock::now();
-        setup_duration_.get() = 0;
-        fn_(setup_duration_.get());
-        const auto end = high_resolution_clock::now();
+        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+        auto start = steady_clock::now();
+        config_.fn(start, teardown_timestamp);
+        auto end = steady_clock::now();
+        if (teardown_timestamp)
+          end = teardown_timestamp.value();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
-        durations[i] = std::abs(execution_time - estimated_measurement_error - setup_duration_.get());
-        if (setup_duration_.get() > 0)
-          durations[i] -= estimated_measurement_error;
+        durations[i] = std::abs(execution_time - estimated_measurement_error);
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
