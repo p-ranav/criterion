@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <csignal>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -25,13 +26,13 @@
 
 struct benchmark_config {
   std::string name;
-  void (*fn)();
+  std::function<void()> fn;
 };
 
 class benchmark {
 
   std::string name_{""};
-  using Fn = void(*)();
+  using Fn = std::function<void()>;
   Fn fn_;
 
   std::size_t warmup_runs_{3};
