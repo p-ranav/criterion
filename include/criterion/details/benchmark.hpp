@@ -68,9 +68,9 @@ class benchmark {
     num_iterations_ = 10; // fixed
     const auto min_runs = 10;
     const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
-    const auto one_minute = 6E10;
+    const auto ten_seconds = 1e+10;
 
-    const auto benchmark_time = std::max(double(min_benchmark_time), one_minute);
+    const auto benchmark_time = std::max(double(min_benchmark_time), ten_seconds);
     const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
 
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
