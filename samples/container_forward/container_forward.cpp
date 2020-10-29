@@ -1,4 +1,4 @@
-#include <benchmark/criterion.hpp>
+#include <criterion/criterion.hpp>
 #include <list>
 #include <vector>
 

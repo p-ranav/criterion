@@ -1,3 +1,3 @@
-#include <benchmark/criterion.hpp>
+#include <criterion/criterion.hpp>
 
 BENCHMARK_MAIN
