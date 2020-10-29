@@ -1,2 +1,2 @@
 #include <criterion/criterion.hpp>
-BENCHMARK_MAIN
+CRITERION_BENCHMARK_MAIN
