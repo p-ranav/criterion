@@ -4,8 +4,8 @@
 BENCHMARK_TEMPLATE(vector_sort, size_t)
 {
   SETUP_BENCHMARK(
-    const auto params = BENCHMARK_ARGUMENTS;
-    std::vector<int> vec(std::get<0>(params), 0);
+    const auto args = BENCHMARK_ARGUMENTS;
+    std::vector<int> vec(std::get<0>(args), 0);
   )
 
   // Code being benchmarked
