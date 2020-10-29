@@ -49,23 +49,20 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/
 
 # ---- Create library ----
 
-# Note: for header-only libraries change all PUBLIC flags to INTERFACE and create an interface
-# target: add_library(Criterion INTERFACE) set_target_properties(Criterion PROPERTIES
-# INTERFACE_COMPILE_FEATURES cxx_std_17)
+add_library(CriterionHeaders EXCLUDE_FROM_ALL ${headers})
+set_target_properties(CriterionHeaders PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(CriterionHeaders PROPERTIES CXX_STANDARD 17)
 
-message(DEBUG "Adding library")
-add_library(Criterion ${headers} ${sources})
-SET_TARGET_PROPERTIES(Criterion PROPERTIES OUTPUT_NAME benchmark)
-set_target_properties(Criterion PROPERTIES CXX_STANDARD 17)
+add_library(Criterion INTERFACE)
+set_target_properties(Criterion PROPERTIES INTERFACE_COMPILE_FEATURES cxx_std_17)
 
-# being a cross-platform target, we enforce standards conformance on MSVC
-target_compile_options(Criterion PUBLIC "$<$<BOOL:${MSVC}>:/permissive->")
+# being a cross-platform target, we enforce enforce standards conformance on MSVC
+target_compile_options(Criterion INTERFACE "$<$<BOOL:${MSVC}>:/permissive->")
 
-# Link dependencies (if required) target_link_libraries(Criterion PUBLIC cxxopts)
-
-target_include_directories(
-  Criterion PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-                 $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+target_include_directories(Criterion
+  INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
 # ---- Create an installable target ----

@@ -2,6 +2,7 @@
 #include <criterion/details/benchmark.hpp>
 #include <criterion/details/benchmark_config.hpp>
 #include <chrono>
+#include <functional>
 #include <string.h>
 
 #if defined(_WIN32)
@@ -12,8 +13,26 @@
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
-void register_benchmark(const benchmark_config &config);
-void execute_registered_benchmarks();
+struct benchmark_helper_struct {
+  static std::vector<benchmark_config> &
+  registered_benchmarks() {
+    static std::vector<benchmark_config> v;
+    return v;
+  }
+
+  static void register_benchmark(const benchmark_config& config) {
+    registered_benchmarks().push_back(config);
+  }
+
+  static void execute_registered_benchmarks() {
+    for (const auto& config : registered_benchmarks()) {
+      benchmark{config}.run();
+    }
+  }
+};
+
+// void register_benchmark(const benchmark_config &config);
+// void execute_registered_benchmarks();
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
@@ -34,7 +53,7 @@ void execute_registered_benchmarks();
   /* helper struct for static registration in ctor */                          \
   struct CONCAT(_register_struct_, __LINE__) {                                 \
     CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
-      register_benchmark(benchmark_config{                                     \
+      benchmark_helper_struct::register_benchmark(benchmark_config{                                     \
           .name = Name,                                                        \
           .fn = CONCAT(__benchmark_function_wrapper__,                         \
                        __LINE__)::CONCAT(_registered_fun_, __LINE__)});        \
@@ -75,5 +94,5 @@ static inline void signal_handler(int signal) {
     std::signal(SIGILL, signal_handler);                                       \
     std::signal(SIGABRT, signal_handler);                                      \
     std::signal(SIGFPE, signal_handler);                                       \
-    execute_registered_benchmarks();                                           \
+    benchmark_helper_struct::execute_registered_benchmarks();                                           \
   }

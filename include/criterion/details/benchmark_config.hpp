@@ -14,4 +14,9 @@ struct benchmark_config {
   Fn fn;
   std::string parameterized_instance_name = ""; 
   void * parameters = (void *)(&empty_tuple);
+
+  enum class benchmark_reporting_type {
+    console
+  };
+  benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
 };
