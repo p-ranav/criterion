@@ -107,29 +107,38 @@ public:
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_measurement_error = estimate_measurement_error();
 
-    const std::string prefix = config_.name + config_.parameterized_instance_name;
-    std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
+    const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
+    // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
     using namespace indicators;
 
     show_console_cursor(false);
 
-    ProgressSpinner spinner{
-      option::PrefixText{"  "},
+    // Get an early estimate for execution time
+    // Update number of iterations to run for this benchmark based on estimate
+    update_iterations();
+
+    ProgressBar spinner{
+      option::PrefixText{prefix},
+      option::BarWidth{10},
+      option::Lead{"■"},
+      option::Fill{"■"},
+      option::Remainder{"-"},
       option::ForegroundColor{Color::white},
       option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-      option::ShowSpinner{false},
+      // option::ShowSpinner{false},
       option::ShowElapsedTime{true},
       option::ShowRemainingTime{true}
     };
 
     spinner.set_option(option::MaxProgress{max_num_runs_});
-    update_iterations();
-    spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
     long double mean_lowest_rsd = 0;
     bool first_run{true};
+
+    long double best_duration = 0;
+    long double worst_duration = 0;
 
     std::size_t num_runs = 0;
     spinner.set_progress(num_runs);
@@ -162,6 +171,8 @@ public:
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
         mean_lowest_rsd = mean;
+        best_duration = *std::min_element(durations.begin(), durations.end());
+        worst_duration = *std::max_element(durations.begin(), durations.end());
         first_run = false;
       }
       else {
@@ -180,19 +191,18 @@ public:
         } else {
           lowest_rsd = current_lowest_rsd; // go back to old estimate
         }
+
+        // Save best and worst duration
+        best_duration = std::min(best_duration, *std::min_element(durations.begin(), durations.end()));
+        worst_duration = std::max(worst_duration, *std::min_element(durations.begin(), durations.end()));
       }
 
       spinner.set_progress(num_runs);
 
       // Show iteration as postfix text
-      std::stringstream os;
-      os
-        << std::setprecision(3)
-        << "μ = "
-        << duration_to_string(mean_lowest_rsd) 
-        << " ± " << lowest_rsd << "%"
-        << " [N = " << max_num_runs_ * num_iterations_ << "]";
-      spinner.set_option(option::PostfixText{os.str()});
+      // std::stringstream os;
+      // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
+      // spinner.set_option(option::PostfixText{os.str()});
 
       if (num_runs >= max_num_runs_) {
         break;
@@ -201,21 +211,18 @@ public:
       num_runs += 1;
     }
 
-    std::stringstream os;
-    os
+    std::cout 
+      << termcolor::bold 
+      << termcolor::green 
       << std::setprecision(3)
-      << "μ = "
+      << "    "
       << duration_to_string(mean_lowest_rsd) 
       << " ± " << lowest_rsd << "%"
-      << " [N = " << max_num_runs_ * num_iterations_ << "]";
-
-    spinner.set_option(option::ForegroundColor{Color::green});
-    spinner.set_option(option::ShowSpinner{false});
-    spinner.set_option(option::ShowPercentage{false});
-    spinner.set_option(option::ShowElapsedTime{false});
-    spinner.set_option(option::ShowRemainingTime{false});
-    spinner.set_option(option::PostfixText{os.str()});
-    spinner.mark_as_completed();
+      << " {Best: "
+      << duration_to_string(best_duration) << ", Worst: "
+      << duration_to_string(worst_duration)
+      << "}\n\n"
+      << termcolor::reset;
 
     indicators::show_console_cursor(true);
   }

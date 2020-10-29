@@ -19,8 +19,7 @@ std::shared_ptr<Foo> Create_Foo_With_MakeShared() {
 BENCHMARK_TEMPLATE(shared_ptr, std::function<std::shared_ptr<Foo>()>)
 {
   SETUP_BENCHMARK(
-    const auto args = BENCHMARK_ARGUMENTS;
-    auto test_function = std::get<0>(args);
+    auto test_function = BENCHMARK_ARGUMENTS(0);
   )
 
   auto foo_ptr = test_function();

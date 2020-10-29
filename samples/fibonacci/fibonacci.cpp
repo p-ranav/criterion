@@ -10,8 +10,7 @@ uint64_t Fibonacci(uint64_t n) {
 BENCHMARK_TEMPLATE(Fibonacci, uint64_t)
 {
   SETUP_BENCHMARK(
-    const auto args = BENCHMARK_ARGUMENTS;
-    const auto input = std::get<0>(args);
+    const auto input = BENCHMARK_ARGUMENTS(0);
   )
 
   [[maybe_unused]] const auto result = Fibonacci(input);

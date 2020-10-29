@@ -61,8 +61,11 @@ void execute_registered_benchmark_template(const std::string& template_name, con
           __benchmark_teardown_timestamp, \
       [[maybe_unused]] void * __benchmark_parameters)
 
-#define BENCHMARK_ARGUMENTS \
-  *((T *)__benchmark_parameters);
+#define BENCHMARK_ARGUMENTS_TUPLE \
+  *((T *)__benchmark_parameters)
+
+#define BENCHMARK_ARGUMENTS(index) \
+  std::get<index>(*((T *)__benchmark_parameters));
 
 #define RUN_BENCHMARK_TEMPLATE(TemplateName, InstanceName, ...) \
   \
