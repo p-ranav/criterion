@@ -1,5 +1,7 @@
+#include <functional>
+#include <string>
 #include <vector>
-#include <benchmark/registration.hpp>
+#include <criterion/criterion.hpp>
 
 auto IntToStringConversionTest(int count)
 {
@@ -27,22 +29,17 @@ auto DoubleToStringConversionTest(int count)
   return outNumbers;
 }
 
-BENCHMARK("int_to_string/10")
+BENCHMARK_TEMPLATE(to_string, /* parameters -> */ std::function<std::vector<std::string>(int)>, int)
 {
-  IntToStringConversionTest(10);
+  SETUP_BENCHMARK(
+    const auto params = BENCHMARK_ARGUMENTS;
+    const auto fn = std::get<0>(params);
+    const auto size = std::get<1>(params);
+  )
+  fn(size);
 }
 
-BENCHMARK("int_to_string/1000")
-{
-  IntToStringConversionTest(1000);
-}
-
-BENCHMARK("double_to_string/10")
-{
-  DoubleToStringConversionTest(10);
-}
-
-BENCHMARK("double_to_string/1000")
-{
-  DoubleToStringConversionTest(1000);
-}
+RUN_BENCHMARK_TEMPLATE(to_string, "/int/10", IntToStringConversionTest, 10)
+RUN_BENCHMARK_TEMPLATE(to_string, "/int/1000", IntToStringConversionTest, 1000)
+RUN_BENCHMARK_TEMPLATE(to_string, "/double/10", DoubleToStringConversionTest, 10)
+RUN_BENCHMARK_TEMPLATE(to_string, "/double/1000", DoubleToStringConversionTest, 1000)

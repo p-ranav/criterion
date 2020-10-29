@@ -14,8 +14,8 @@
 #include <thread>
 #include <utility>
 
-#include <benchmark/benchmark_config.hpp>
-#include <benchmark/indicators.hpp>
+#include <criterion/details/benchmark_config.hpp>
+#include <criterion/details/indicators.hpp>
 
 class benchmark {
   benchmark_config config_;
@@ -48,7 +48,7 @@ class benchmark {
       std::chrono::steady_clock::time_point start_timestamp;
       std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
       const auto start = steady_clock::now();
-      config_.fn(start_timestamp, teardown_timestamp);
+      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
       const auto end = steady_clock::now();
       const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       if (first_run) {
@@ -107,7 +107,7 @@ public:
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_measurement_error = estimate_measurement_error();
 
-    const std::string prefix = config_.name;
+    const std::string prefix = config_.name + config_.parameterized_instance_name;
     std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
     using namespace indicators;
@@ -141,7 +141,7 @@ public:
       for (std::size_t i = 0; i < num_iterations_; i++) {
         std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
         auto start = steady_clock::now();
-        config_.fn(start, teardown_timestamp);
+        config_.fn(start, teardown_timestamp, config_.parameters);
         auto end = steady_clock::now();
         if (teardown_timestamp)
           end = teardown_timestamp.value();

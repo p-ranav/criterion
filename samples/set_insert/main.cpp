@@ -1,2 +1,2 @@
-#include <benchmark/registration.hpp>
+#include <criterion/criterion.hpp>
 BENCHMARK_MAIN

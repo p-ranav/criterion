@@ -1,5 +1,6 @@
-#include <benchmark/benchmark.hpp>
-#include <benchmark/benchmark_config.hpp>
+#include <criterion/details/benchmark_config.hpp>
+#include <criterion/details/benchmark_macro.hpp>
+#include <functional>
 
 static std::vector<benchmark_config> &
 registered_benchmarks() {

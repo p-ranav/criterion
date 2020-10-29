@@ -1,6 +1,6 @@
 #pragma once
-#include <benchmark/benchmark.hpp>
-#include <benchmark/benchmark_config.hpp>
+#include <criterion/details/benchmark.hpp>
+#include <criterion/details/benchmark_config.hpp>
 #include <chrono>
 #include <string.h>
 
@@ -25,7 +25,8 @@ void execute_registered_benchmarks();
   struct CONCAT(__benchmark_function_wrapper__, __LINE__) {                    \
     static void CONCAT(_registered_fun_, __LINE__)(                            \
         std::chrono::steady_clock::time_point &,                               \
-        std::optional<std::chrono::steady_clock::time_point> &);               \
+        std::optional<std::chrono::steady_clock::time_point> &, \
+        void*);        \
   };                                                                           \
                                                                                \
   namespace /* ensure internal linkage for struct */                           \
@@ -48,7 +49,8 @@ void execute_registered_benchmarks();
       [[maybe_unused]] std::chrono::steady_clock::time_point &                 \
           __benchmark_start_timestamp,                                         \
       [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &  \
-          __benchmark_teardown_timestamp)
+          __benchmark_teardown_timestamp, \
+      [[maybe_unused]] void * __benchmark_parameters) \
 
 #define SETUP_BENCHMARK(...)                                                   \
   __VA_ARGS__                                                                  \

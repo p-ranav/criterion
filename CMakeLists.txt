@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 # Note: update this to your new project's name and version
 project(
-  Benchmark
+  Criterion
   VERSION 1.0
   LANGUAGES CXX
 )
@@ -50,21 +50,21 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/
 # ---- Create library ----
 
 # Note: for header-only libraries change all PUBLIC flags to INTERFACE and create an interface
-# target: add_library(Benchmark INTERFACE) set_target_properties(Benchmark PROPERTIES
+# target: add_library(Criterion INTERFACE) set_target_properties(Criterion PROPERTIES
 # INTERFACE_COMPILE_FEATURES cxx_std_17)
 
 message(DEBUG "Adding library")
-add_library(Benchmark ${headers} ${sources})
-SET_TARGET_PROPERTIES(Benchmark PROPERTIES OUTPUT_NAME benchmark)
-set_target_properties(Benchmark PROPERTIES CXX_STANDARD 17)
+add_library(Criterion ${headers} ${sources})
+SET_TARGET_PROPERTIES(Criterion PROPERTIES OUTPUT_NAME benchmark)
+set_target_properties(Criterion PROPERTIES CXX_STANDARD 17)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
-target_compile_options(Benchmark PUBLIC "$<$<BOOL:${MSVC}>:/permissive->")
+target_compile_options(Criterion PUBLIC "$<$<BOOL:${MSVC}>:/permissive->")
 
-# Link dependencies (if required) target_link_libraries(Benchmark PUBLIC cxxopts)
+# Link dependencies (if required) target_link_libraries(Criterion PUBLIC cxxopts)
 
 target_include_directories(
-  Benchmark PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  Criterion PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
                  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 

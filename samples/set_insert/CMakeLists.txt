@@ -10,7 +10,7 @@ include(../../cmake/tools.cmake)
 
 include(../../cmake/CPM.cmake)
 
-CPMAddPackage(NAME Benchmark SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
+CPMAddPackage(NAME Criterion SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -25,6 +25,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(SetInsert ${sources})
-target_include_directories(SetInsert PRIVATE ${Benchmark_INCLUDE_DIRS})
+target_include_directories(SetInsert PRIVATE ${Criterion_INCLUDE_DIRS})
 set_target_properties(SetInsert PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "set_insert")
-target_link_libraries(SetInsert Benchmark)
+target_link_libraries(SetInsert Criterion)
