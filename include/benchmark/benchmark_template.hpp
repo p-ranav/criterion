@@ -1,4 +1,5 @@
 #pragma once
+#include <benchmark/for_each_macro.hpp>
 #include <benchmark/registration.hpp>
 #include <benchmark/benchmark_template.hpp>
 #include <benchmark/benchmark_config.hpp>
@@ -11,13 +12,14 @@ struct register_benchmark_template_data {
 };
 
 template <class ArgTuple>
-void execute_registered_benchmark_template(const std::string& template_name, ArgTuple& arg_tuple) {
+void execute_registered_benchmark_template(const std::string& template_name, const std::string& instance_name, ArgTuple& arg_tuple) {
   for (auto& [k, v] : register_benchmark_template_data::registered_benchmark_templates()) {
     if (k == template_name) {
       register_benchmark(
         benchmark_config{ 
           .name = template_name, 
           .fn = v.fn,
+          .parameterized_instance_name = instance_name,
           .parameters = (void *)(&arg_tuple)
         }
       );
@@ -61,18 +63,18 @@ void execute_registered_benchmark_template(const std::string& template_name, Arg
           __benchmark_teardown_timestamp, \
       [[maybe_unused]] void * __benchmark_parameters)
 
-#define BENCHMARK_PARAMETERS \
+#define BENCHMARK_ARGUMENTS \
   *((T *)__benchmark_parameters);
 
-#define RUN_BENCHMARK_TEMPLATE(TemplateName, ...) \
-  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = std::make_tuple(__VA_ARGS__); \
+#define RUN_BENCHMARK_TEMPLATE(TemplateName, InstanceName, ...) \
   \
   namespace /* ensure internal linkage for struct */                           \
   {                                                                            \
+  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = {__VA_ARGS__}; \
   /* helper struct for static registration in ctor */                          \
   struct CONCAT(_instantiation_struct_, __LINE__) {                                 \
     CONCAT(_instantiation_struct_, __LINE__)() { /* called once before main */      \
-      execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
+      execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
     }                                                                          \
   } CONCAT(_instantiation_struct_instance_, __LINE__);                              \
   }
