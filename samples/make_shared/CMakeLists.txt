@@ -10,7 +10,7 @@ include(../../cmake/tools.cmake)
 
 include(../../cmake/CPM.cmake)
 
-CPMAddPackage(NAME Benchmark SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
+CPMAddPackage(NAME Criterion SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -25,6 +25,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_executable(MakeShared ${sources})
-target_include_directories(MakeShared PRIVATE ${Benchmark_INCLUDE_DIRS})
+target_include_directories(MakeShared PRIVATE ${Criterion_INCLUDE_DIRS})
 set_target_properties(MakeShared PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "make_shared")
-target_link_libraries(MakeShared Benchmark)
+target_link_libraries(MakeShared Criterion)
