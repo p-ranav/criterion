@@ -1,8 +1,6 @@
 #pragma once
-#include <benchmark/for_each_macro.hpp>
-#include <benchmark/registration.hpp>
-#include <benchmark/benchmark_template.hpp>
-#include <benchmark/benchmark_config.hpp>
+#include <benchmark/details/benchmark_macro.hpp>
+#include <benchmark/details/benchmark_config.hpp>
 #include <unordered_map>
 
 void register_benchmark_template(const benchmark_config &config);

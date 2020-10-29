@@ -1,6 +1,5 @@
-#include <benchmark/benchmark_template.hpp>
-#include <benchmark/benchmark_config.hpp>
-#include <benchmark/registration.hpp>
+#include <benchmark/details/benchmark_template_macro.hpp>
+#include <benchmark/details/benchmark_config.hpp>
 #include <string>
 #include <unordered_map>
 

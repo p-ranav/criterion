@@ -14,8 +14,8 @@
 #include <thread>
 #include <utility>
 
-#include <benchmark/benchmark_config.hpp>
-#include <benchmark/indicators.hpp>
+#include <benchmark/details/benchmark_config.hpp>
+#include <benchmark/details/indicators.hpp>
 
 class benchmark {
   benchmark_config config_;

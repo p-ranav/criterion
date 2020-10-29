@@ -1,7 +1,7 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include <benchmark/benchmark_template.hpp>
+#include <benchmark/criterion.hpp>
 
 auto IntToStringConversionTest(int count)
 {

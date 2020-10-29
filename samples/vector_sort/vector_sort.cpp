@@ -1,6 +1,6 @@
 #include <vector>
-#include <benchmark/registration.hpp>
-#include <benchmark/benchmark_template.hpp>
+#include <benchmark/criterion.hpp>
+#include <benchmark/criterion.hpp>
 
 BENCHMARK_TEMPLATE(vector_sort, size_t)
 {

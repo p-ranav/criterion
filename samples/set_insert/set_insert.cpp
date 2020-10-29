@@ -1,4 +1,4 @@
-#include <benchmark/registration.hpp>
+#include <benchmark/criterion.hpp>
 #include <set>
 #include <unordered_set>
 

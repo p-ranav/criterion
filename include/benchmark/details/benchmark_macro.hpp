@@ -1,6 +1,6 @@
 #pragma once
-#include <benchmark/benchmark.hpp>
-#include <benchmark/benchmark_config.hpp>
+#include <benchmark/details/benchmark.hpp>
+#include <benchmark/details/benchmark_config.hpp>
 #include <chrono>
 #include <string.h>
 

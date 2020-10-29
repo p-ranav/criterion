@@ -1,4 +1,4 @@
-#include <benchmark/registration.hpp>
+#include <benchmark/criterion.hpp>
 #include <list>
 #include <vector>
 

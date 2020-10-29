@@ -1,7 +1,6 @@
 #include <memory>
 #include <string>
-#include <benchmark/registration.hpp>
-#include <benchmark/benchmark_template.hpp>
+#include <benchmark/criterion.hpp>
 
 struct Foo {
   std::string data_1{"1234567891012131415161718192021"};

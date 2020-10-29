@@ -1,5 +1,5 @@
 #include <string>
-#include <benchmark/registration.hpp>
+#include <benchmark/criterion.hpp>
 
 static auto split(const std::string& string, const std::string& delimiter)
     -> std::vector<std::string> {
