@@ -13,7 +13,7 @@
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
-struct benchmark_helper_struct {
+struct benchmark_registration_helper_struct {
   static std::vector<benchmark_config> &
   registered_benchmarks() {
     static std::vector<benchmark_config> v;
@@ -53,7 +53,7 @@ struct benchmark_helper_struct {
   /* helper struct for static registration in ctor */                          \
   struct CONCAT(_register_struct_, __LINE__) {                                 \
     CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
-      benchmark_helper_struct::register_benchmark(benchmark_config{                                     \
+      benchmark_registration_helper_struct::register_benchmark(benchmark_config{                                     \
           .name = Name,                                                        \
           .fn = CONCAT(__benchmark_function_wrapper__,                         \
                        __LINE__)::CONCAT(_registered_fun_, __LINE__)});        \
@@ -94,5 +94,5 @@ static inline void signal_handler(int signal) {
     std::signal(SIGILL, signal_handler);                                       \
     std::signal(SIGABRT, signal_handler);                                      \
     std::signal(SIGFPE, signal_handler);                                       \
-    benchmark_helper_struct::execute_registered_benchmarks();                                           \
+    benchmark_registration_helper_struct::execute_registered_benchmarks();                                           \
   }

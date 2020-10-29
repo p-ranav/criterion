@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-struct benchmark_template_helper_struct {
+struct benchmark_template_registration_helper_struct {
   static std::unordered_multimap<std::string, benchmark_config> & registered_benchmark_templates() {
     static std::unordered_multimap<std::string, benchmark_config> m;
     return m;
@@ -22,7 +22,7 @@ struct benchmark_template_helper_struct {
   static void execute_registered_benchmark_template(const std::string& template_name, const std::string& instance_name, ArgTuple& arg_tuple) {
     for (auto& [k, v] : registered_benchmark_templates()) {
       if (k == template_name) {
-        benchmark_helper_struct::register_benchmark(
+        benchmark_registration_helper_struct::register_benchmark(
           benchmark_config{ 
             .name = template_name, 
             .fn = v.fn,
@@ -52,7 +52,7 @@ struct benchmark_template_helper_struct {
   /* helper struct for static registration in ctor */                          \
   struct CONCAT(_register_struct_, __LINE__) {                                 \
     CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
-      benchmark_template_helper_struct::register_benchmark_template(benchmark_config{                            \
+      benchmark_template_registration_helper_struct::register_benchmark_template(benchmark_config{                            \
           .name = #Name,                                                        \
           .fn = CONCAT(__benchmark_function_wrapper__,                         \
                        __LINE__)<CONCAT(Name, BenchmarkParameters)>::CONCAT(_registered_fun_, __LINE__)});        \
@@ -85,7 +85,7 @@ struct benchmark_template_helper_struct {
   /* helper struct for static registration in ctor */                          \
   struct CONCAT(_instantiation_struct_, __LINE__) {                                 \
     CONCAT(_instantiation_struct_, __LINE__)() { /* called once before main */      \
-      benchmark_template_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
+      benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
     }                                                                          \
   } CONCAT(_instantiation_struct_instance_, __LINE__);                              \
   }
