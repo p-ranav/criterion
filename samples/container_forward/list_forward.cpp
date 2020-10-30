@@ -17,4 +17,3 @@ BENCHMARK(ListIntForward)
     list.clear();
   )
 }
-REGISTER_BENCHMARK(ListIntForward, "")

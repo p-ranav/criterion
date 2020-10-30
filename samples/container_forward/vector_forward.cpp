@@ -17,4 +17,3 @@ BENCHMARK(VectorIntForward)
     vec.clear();
   )
 }
-REGISTER_BENCHMARK(VectorIntForward, "")
