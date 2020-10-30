@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+namespace criterion {
+
 struct benchmark_result {
   std::string name;
   std::size_t num_warmup_runs;
@@ -11,3 +13,5 @@ struct benchmark_result {
   long double overall_best_execution_time;
   long double overall_worst_execution_time;
 };
+
+}

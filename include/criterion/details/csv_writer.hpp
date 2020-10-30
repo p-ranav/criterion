@@ -5,6 +5,8 @@
 #include <map>
 #include <criterion/details/benchmark_result.hpp>
 
+namespace criterion {
+
 class csv_writer {
 
   static std::vector<std::string> to_csv_row(const benchmark_result& result) {
@@ -52,3 +54,5 @@ public:
     return result;
   }
 };
+
+}

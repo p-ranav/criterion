@@ -14,6 +14,8 @@
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
+namespace criterion {
+
 struct benchmark_registration_helper_struct {
   static std::vector<benchmark_config> &
   registered_benchmarks() {
@@ -32,8 +34,7 @@ struct benchmark_registration_helper_struct {
   }
 };
 
-// void register_benchmark(const benchmark_config &config);
-// void execute_registered_benchmarks();
+}
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
@@ -53,7 +54,7 @@ struct benchmark_registration_helper_struct {
   /* helper struct for static registration in ctor */                          \
   struct CONCAT(_register_struct_, __LINE__) {                                 \
     CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
-      benchmark_registration_helper_struct::register_benchmark(benchmark_config{                                     \
+      criterion::benchmark_registration_helper_struct::register_benchmark(criterion::benchmark_config{                                     \
           .name = #Name,                                                        \
           .fn = CONCAT(__benchmark_function_wrapper__,                         \
                        __LINE__)::CONCAT(_registered_fun_, __LINE__)});        \
@@ -94,6 +95,6 @@ static inline void signal_handler(int signal) {
     std::signal(SIGILL, signal_handler);                                       \
     std::signal(SIGABRT, signal_handler);                                      \
     std::signal(SIGFPE, signal_handler);                                       \
-    benchmark_registration_helper_struct::execute_registered_benchmarks();                                           \
-    csv_writer::write_results("results.csv", benchmark::results); \
+    criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();                                           \
+    criterion::csv_writer::write_results("results.csv", criterion::benchmark::results); \
   }

@@ -5,6 +5,8 @@
 #include <string>
 #include <string_view>
 
+namespace criterion {
+
 struct benchmark_config {
   static inline std::tuple<> empty_tuple{};
   std::string name;
@@ -20,3 +22,5 @@ struct benchmark_config {
   };
   benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
 };
+
+}

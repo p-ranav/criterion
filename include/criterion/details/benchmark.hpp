@@ -19,6 +19,8 @@
 #include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/indicators.hpp>
 
+namespace criterion {
+
 class benchmark {
   benchmark_config config_;
   using Fn = benchmark_config::Fn;
@@ -245,3 +247,5 @@ public:
     indicators::show_console_cursor(true);
   }
 };
+
+}
