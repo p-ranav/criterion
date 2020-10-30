@@ -1,6 +1,7 @@
 #pragma once
 #include <criterion/details/benchmark.hpp>
 #include <criterion/details/benchmark_config.hpp>
+#include <criterion/details/csv_writer.hpp>
 #include <chrono>
 #include <functional>
 #include <string.h>
@@ -94,4 +95,5 @@ static inline void signal_handler(int signal) {
     std::signal(SIGABRT, signal_handler);                                      \
     std::signal(SIGFPE, signal_handler);                                       \
     benchmark_registration_helper_struct::execute_registered_benchmarks();                                           \
+    csv_writer::write_results("results.csv", benchmark::results); \
   }

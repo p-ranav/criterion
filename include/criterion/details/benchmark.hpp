@@ -7,6 +7,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -15,6 +16,7 @@
 #include <utility>
 
 #include <criterion/details/benchmark_config.hpp>
+#include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/indicators.hpp>
 
 class benchmark {
@@ -25,7 +27,7 @@ class benchmark {
   std::size_t num_iterations_{0};
   std::size_t max_num_runs_{0};
 
-  long double estimate_measurement_error() {
+  long double estimate_minimum_measurement_cost() {
     using namespace std::chrono;
     std::vector<long double> durations;
 
@@ -36,7 +38,7 @@ class benchmark {
       const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       durations.push_back(execution_time);
     }
-    return std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
+    return *std::min_element(durations.begin(), durations.end());
   }
 
   long double estimate_execution_time() {
@@ -100,12 +102,14 @@ public:
   benchmark(const benchmark_config& config): 
     config_(config) {}
 
+  static inline std::map<std::string, benchmark_result> results;
+
   void run() {
 
     using namespace std::chrono;
 
     // run empty function to estimate minimum delay in scheduling and executing user function
-    const auto estimated_measurement_error = estimate_measurement_error();
+    const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
 
     const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
     // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
@@ -134,11 +138,11 @@ public:
     spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
-    long double mean_lowest_rsd = 0;
+    long double best_estimate_mean = 0;
     bool first_run{true};
 
-    long double best_duration = 0;
-    long double worst_duration = 0;
+    long double overall_best_execution_time = 0;
+    long double overall_worst_execution_time = 0;
 
     std::size_t num_runs = 0;
     spinner.set_progress(num_runs);
@@ -155,7 +159,7 @@ public:
         if (teardown_timestamp)
           end = teardown_timestamp.value();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
-        durations[i] = std::abs(execution_time - estimated_measurement_error);
+        durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
@@ -170,9 +174,9 @@ public:
 
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
-        mean_lowest_rsd = mean;
-        best_duration = *std::min_element(durations.begin(), durations.end());
-        worst_duration = *std::max_element(durations.begin(), durations.end());
+        best_estimate_mean = mean;
+        overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
+        overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
         first_run = false;
       }
       else {
@@ -182,8 +186,8 @@ public:
         if (lowest_rsd < current_lowest_rsd) {
           // There's a new LOWEST relative standard deviation
 
-          if (mean < mean_lowest_rsd) {
-            mean_lowest_rsd = mean; // new mean is lower
+          if (mean < best_estimate_mean) {
+            best_estimate_mean = mean; // new mean is lower
           } 
           else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
@@ -193,8 +197,8 @@ public:
         }
 
         // Save best and worst duration
-        best_duration = std::min(best_duration, *std::min_element(durations.begin(), durations.end()));
-        worst_duration = std::max(worst_duration, *std::min_element(durations.begin(), durations.end()));
+        overall_best_execution_time = std::min(overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
+        overall_worst_execution_time = std::max(overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
       }
 
       spinner.set_progress(num_runs);
@@ -216,13 +220,27 @@ public:
       << termcolor::green 
       << std::setprecision(3)
       << "    "
-      << duration_to_string(mean_lowest_rsd) 
+      << duration_to_string(best_estimate_mean) 
       << " ± " << lowest_rsd << "%"
       << " {Best: "
-      << duration_to_string(best_duration) << ", Worst: "
-      << duration_to_string(worst_duration)
+      << duration_to_string(overall_best_execution_time) << ", Worst: "
+      << duration_to_string(overall_worst_execution_time)
       << "}\n\n"
       << termcolor::reset;
+
+    results.insert(std::make_pair(
+      prefix,
+      benchmark_result {
+        .name = config_.name + config_.parameterized_instance_name,
+        .num_warmup_runs = warmup_runs_,
+        .num_runs = max_num_runs_,
+        .num_iterations = num_iterations_,
+        .best_estimate_mean = best_estimate_mean,
+        .best_estimate_rsd = lowest_rsd,
+        .overall_best_execution_time = overall_best_execution_time,
+        .overall_worst_execution_time = overall_worst_execution_time
+      }
+    ));
 
     indicators::show_console_cursor(true);
   }
