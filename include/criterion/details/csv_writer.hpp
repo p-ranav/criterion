@@ -1,5 +1,6 @@
 #pragma once
 #include <criterion/details/csv2.hpp>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <map>
@@ -9,6 +10,12 @@ namespace criterion {
 
 class csv_writer {
 
+  static std::string duration_to_string(long double duration) {
+    std::stringstream os;
+    os << std::fixed << std::showpoint << std::setprecision(3) << duration;
+    return os.str();
+  }
+
   static std::vector<std::string> to_csv_row(const benchmark_result& result) {
     return std::vector<std::string> {
       "\"" + result.name + "\"",
@@ -16,10 +23,10 @@ class csv_writer {
       std::to_string(result.num_runs),
       std::to_string(result.num_iterations),
       // nanoseconds
-      std::to_string(result.best_estimate_mean),
-      std::to_string(result.best_estimate_rsd),
-      std::to_string(result.overall_best_execution_time),
-      std::to_string(result.overall_worst_execution_time),
+      duration_to_string(result.best_estimate_mean),
+      duration_to_string(result.best_estimate_rsd),
+      duration_to_string(result.overall_best_execution_time),
+      duration_to_string(result.overall_worst_execution_time),
     };
   }
 
