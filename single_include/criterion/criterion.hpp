@@ -34,622 +34,482 @@ enum class ProgressType { incremental, decremental };
 // defines the appropriate macro that is used to wrap some
 // platform specific things
 #if defined(_WIN32) || defined(_WIN64)
-#   define TERMCOLOR_OS_WINDOWS
+#define TERMCOLOR_OS_WINDOWS
 #elif defined(__APPLE__)
-#   define TERMCOLOR_OS_MACOS
+#define TERMCOLOR_OS_MACOS
 #elif defined(__unix__) || defined(__unix)
-#   define TERMCOLOR_OS_LINUX
+#define TERMCOLOR_OS_LINUX
 #else
-#   error unsupported platform
+#error unsupported platform
 #endif
-
 
 // This headers provides the `isatty()`/`fileno()` functions,
 // which are used for testing whether a standart stream refers
 // to the terminal. As for Windows, we also need WinApi funcs
 // for changing colors attributes of the terminal.
 #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-#   include <unistd.h>
+#include <unistd.h>
 #elif defined(TERMCOLOR_OS_WINDOWS)
 #if defined(_MSC_VER)
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#   include <io.h>
-#   include <windows.h>
+#include <io.h>
+#include <windows.h>
 #endif
 #endif
 
-
-#include <iostream>
 #include <cstdio>
+#include <iostream>
 
+namespace termcolor {
+// Forward declaration of the `_internal` namespace.
+// All comments are below.
+namespace _internal {
+// An index to be used to access a private storage of I/O streams. See
+// colorize / nocolorize I/O manipulators for details.
+static int colorize_index = std::ios_base::xalloc();
 
-namespace termcolor
-{
-    // Forward declaration of the `_internal` namespace.
-    // All comments are below.
-    namespace _internal
-    {
-        // An index to be used to access a private storage of I/O streams. See
-        // colorize / nocolorize I/O manipulators for details.
-        static int colorize_index = std::ios_base::xalloc();
+inline FILE *get_standard_stream(const std::ostream &stream);
+inline bool is_colorized(std::ostream &stream);
+inline bool is_atty(const std::ostream &stream);
 
-        inline FILE* get_standard_stream(const std::ostream& stream);
-        inline bool is_colorized(std::ostream& stream);
-        inline bool is_atty(const std::ostream& stream);
+#if defined(TERMCOLOR_OS_WINDOWS)
+inline void win_change_attributes(std::ostream &stream, int foreground, int background = -1);
+#endif
+} // namespace _internal
 
-    #if defined(TERMCOLOR_OS_WINDOWS)
-        inline void win_change_attributes(std::ostream& stream, int foreground, int background=-1);
-    #endif
-    }
+inline std::ostream &colorize(std::ostream &stream) {
+  stream.iword(_internal::colorize_index) = 1L;
+  return stream;
+}
 
-    inline
-    std::ostream& colorize(std::ostream& stream)
-    {
-        stream.iword(_internal::colorize_index) = 1L;
-        return stream;
-    }
+inline std::ostream &nocolorize(std::ostream &stream) {
+  stream.iword(_internal::colorize_index) = 0L;
+  return stream;
+}
 
-    inline
-    std::ostream& nocolorize(std::ostream& stream)
-    {
-        stream.iword(_internal::colorize_index) = 0L;
-        return stream;
-    }
+inline std::ostream &reset(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[00m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, -1);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& reset(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[00m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1, -1);
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &bold(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[1m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& bold(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[1m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &dark(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[2m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& dark(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[2m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &italic(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[3m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& italic(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[3m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &underline(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[4m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& underline(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[4m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &blink(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[5m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& blink(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[5m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &reverse(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[7m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& reverse(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[7m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &concealed(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[8m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& concealed(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[8m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &crossed(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[9m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& crossed(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[9m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t code> inline std::ostream &color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[12];
+    std::snprintf(command, sizeof(command), "\033[38;5;%dm", code);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t code> inline
-    std::ostream& color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[12];
-            std::snprintf(command, sizeof(command), "\033[38;5;%dm", code);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t code> inline std::ostream &on_color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[12];
+    std::snprintf(command, sizeof(command), "\033[48;5;%dm", code);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t code> inline
-    std::ostream& on_color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[12];
-            std::snprintf(command, sizeof(command), "\033[48;5;%dm", code);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t r, uint8_t g, uint8_t b> inline std::ostream &color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[20];
+    std::snprintf(command, sizeof(command), "\033[38;2;%d;%d;%dm", r, g, b);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t r, uint8_t g, uint8_t b> inline
-    std::ostream& color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[20];
-            std::snprintf(command, sizeof(command), "\033[38;2;%d;%d;%dm", r, g, b);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t r, uint8_t g, uint8_t b> inline std::ostream &on_color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[20];
+    std::snprintf(command, sizeof(command), "\033[48;2;%d;%d;%dm", r, g, b);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t r, uint8_t g, uint8_t b> inline
-    std::ostream& on_color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[20];
-            std::snprintf(command, sizeof(command), "\033[48;2;%d;%d;%dm", r, g, b);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &grey(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[30m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream,
+                                     0 // grey (black)
+    );
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& grey(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[30m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                0   // grey (black)
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &red(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[31m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& red(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[31m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &green(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[32m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_GREEN);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& green(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[32m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_GREEN
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &yellow(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[33m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_GREEN | FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& yellow(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[33m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_GREEN | FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &blue(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[34m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& blue(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[34m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &magenta(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[35m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE | FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& magenta(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[35m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE | FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &cyan(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[36m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE | FOREGROUND_GREEN);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& cyan(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[36m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE | FOREGROUND_GREEN
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &white(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[37m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& white(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[37m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_grey(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[40m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1,
+                                     0 // grey (black)
+    );
+#endif
+  }
+  return stream;
+}
 
+inline std::ostream &on_red(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[41m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
+inline std::ostream &on_green(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[42m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_GREEN);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_grey(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[40m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                0   // grey (black)
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_yellow(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[43m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_GREEN | BACKGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_red(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[41m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_blue(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[44m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_BLUE);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_green(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[42m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_magenta(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[45m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_BLUE | BACKGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_yellow(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[43m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN | BACKGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_cyan(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[46m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_GREEN | BACKGROUND_BLUE);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_blue(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[44m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_BLUE
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_white(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[47m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1,
+                                     BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_RED);
+#endif
+  }
 
-    inline
-    std::ostream& on_magenta(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[45m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_BLUE | BACKGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+  return stream;
+}
 
-    inline
-    std::ostream& on_cyan(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[46m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN | BACKGROUND_BLUE
-            );
-        #endif
-        }
-        return stream;
-    }
+//! Since C++ hasn't a way to hide something in the header from
+//! the outer access, I have to introduce this namespace which
+//! is used for internal purpose and should't be access from
+//! the user code.
+namespace _internal {
+//! Since C++ hasn't a true way to extract stream handler
+//! from the a given `std::ostream` object, I have to write
+//! this kind of hack.
+inline FILE *get_standard_stream(const std::ostream &stream) {
+  if (&stream == &std::cout)
+    return stdout;
+  else if ((&stream == &std::cerr) || (&stream == &std::clog))
+    return stderr;
 
-    inline
-    std::ostream& on_white(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[47m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_RED
-            );
-        #endif
-        }
+  return nullptr;
+}
 
-        return stream;
-    }
+// Say whether a given stream should be colorized or not. It's always
+// true for ATTY streams and may be true for streams marked with
+// colorize flag.
+inline bool is_colorized(std::ostream &stream) {
+  return is_atty(stream) || static_cast<bool>(stream.iword(colorize_index));
+}
 
+//! Test whether a given `std::ostream` object refers to
+//! a terminal.
+inline bool is_atty(const std::ostream &stream) {
+  FILE *std_stream = get_standard_stream(stream);
 
+  // Unfortunately, fileno() ends with segmentation fault
+  // if invalid file descriptor is passed. So we need to
+  // handle this case gracefully and assume it's not a tty
+  // if standard stream is not detected, and 0 is returned.
+  if (!std_stream)
+    return false;
 
-    //! Since C++ hasn't a way to hide something in the header from
-    //! the outer access, I have to introduce this namespace which
-    //! is used for internal purpose and should't be access from
-    //! the user code.
-    namespace _internal
-    {
-        //! Since C++ hasn't a true way to extract stream handler
-        //! from the a given `std::ostream` object, I have to write
-        //! this kind of hack.
-        inline
-        FILE* get_standard_stream(const std::ostream& stream)
-        {
-            if (&stream == &std::cout)
-                return stdout;
-            else if ((&stream == &std::cerr) || (&stream == &std::clog))
-                return stderr;
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+  return ::isatty(fileno(std_stream));
+#elif defined(TERMCOLOR_OS_WINDOWS)
+  return ::_isatty(_fileno(std_stream));
+#endif
+}
 
-            return nullptr;
-        }
+#if defined(TERMCOLOR_OS_WINDOWS)
+//! Change Windows Terminal colors attribute. If some
+//! parameter is `-1` then attribute won't changed.
+inline void win_change_attributes(std::ostream &stream, int foreground, int background) {
+  // yeah, i know.. it's ugly, it's windows.
+  static WORD defaultAttributes = 0;
 
-        // Say whether a given stream should be colorized or not. It's always
-        // true for ATTY streams and may be true for streams marked with
-        // colorize flag.
-        inline
-        bool is_colorized(std::ostream& stream)
-        {
-            return is_atty(stream) || static_cast<bool>(stream.iword(colorize_index));
-        }
+  // Windows doesn't have ANSI escape sequences and so we use special
+  // API to change Terminal output color. That means we can't
+  // manipulate colors by means of "std::stringstream" and hence
+  // should do nothing in this case.
+  if (!_internal::is_atty(stream))
+    return;
 
-        //! Test whether a given `std::ostream` object refers to
-        //! a terminal.
-        inline
-        bool is_atty(const std::ostream& stream)
-        {
-            FILE* std_stream = get_standard_stream(stream);
+  // get terminal handle
+  HANDLE hTerminal = INVALID_HANDLE_VALUE;
+  if (&stream == &std::cout)
+    hTerminal = GetStdHandle(STD_OUTPUT_HANDLE);
+  else if (&stream == &std::cerr)
+    hTerminal = GetStdHandle(STD_ERROR_HANDLE);
 
-            // Unfortunately, fileno() ends with segmentation fault
-            // if invalid file descriptor is passed. So we need to
-            // handle this case gracefully and assume it's not a tty
-            // if standard stream is not detected, and 0 is returned.
-            if (!std_stream)
-                return false;
+  // save default terminal attributes if it unsaved
+  if (!defaultAttributes) {
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (!GetConsoleScreenBufferInfo(hTerminal, &info))
+      return;
+    defaultAttributes = info.wAttributes;
+  }
 
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            return ::isatty(fileno(std_stream));
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            return ::_isatty(_fileno(std_stream));
-        #endif
-        }
+  // restore all default settings
+  if (foreground == -1 && background == -1) {
+    SetConsoleTextAttribute(hTerminal, defaultAttributes);
+    return;
+  }
 
-    #if defined(TERMCOLOR_OS_WINDOWS)
-        //! Change Windows Terminal colors attribute. If some
-        //! parameter is `-1` then attribute won't changed.
-        inline void win_change_attributes(std::ostream& stream, int foreground, int background)
-        {
-            // yeah, i know.. it's ugly, it's windows.
-            static WORD defaultAttributes = 0;
+  // get current settings
+  CONSOLE_SCREEN_BUFFER_INFO info;
+  if (!GetConsoleScreenBufferInfo(hTerminal, &info))
+    return;
 
-            // Windows doesn't have ANSI escape sequences and so we use special
-            // API to change Terminal output color. That means we can't
-            // manipulate colors by means of "std::stringstream" and hence
-            // should do nothing in this case.
-            if (!_internal::is_atty(stream))
-                return;
+  if (foreground != -1) {
+    info.wAttributes &= ~(info.wAttributes & 0x0F);
+    info.wAttributes |= static_cast<WORD>(foreground);
+  }
 
-            // get terminal handle
-            HANDLE hTerminal = INVALID_HANDLE_VALUE;
-            if (&stream == &std::cout)
-                hTerminal = GetStdHandle(STD_OUTPUT_HANDLE);
-            else if (&stream == &std::cerr)
-                hTerminal = GetStdHandle(STD_ERROR_HANDLE);
+  if (background != -1) {
+    info.wAttributes &= ~(info.wAttributes & 0xF0);
+    info.wAttributes |= static_cast<WORD>(background);
+  }
 
-            // save default terminal attributes if it unsaved
-            if (!defaultAttributes)
-            {
-                CONSOLE_SCREEN_BUFFER_INFO info;
-                if (!GetConsoleScreenBufferInfo(hTerminal, &info))
-                    return;
-                defaultAttributes = info.wAttributes;
-            }
+  SetConsoleTextAttribute(hTerminal, info.wAttributes);
+}
+#endif // TERMCOLOR_OS_WINDOWS
 
-            // restore all default settings
-            if (foreground == -1 && background == -1)
-            {
-                SetConsoleTextAttribute(hTerminal, defaultAttributes);
-                return;
-            }
-
-            // get current settings
-            CONSOLE_SCREEN_BUFFER_INFO info;
-            if (!GetConsoleScreenBufferInfo(hTerminal, &info))
-                return;
-
-            if (foreground != -1)
-            {
-                info.wAttributes &= ~(info.wAttributes & 0x0F);
-                info.wAttributes |= static_cast<WORD>(foreground);
-            }
-
-            if (background != -1)
-            {
-                info.wAttributes &= ~(info.wAttributes & 0xF0);
-                info.wAttributes |= static_cast<WORD>(background);
-            }
-
-            SetConsoleTextAttribute(hTerminal, info.wAttributes);
-        }
-    #endif // TERMCOLOR_OS_WINDOWS
-
-    } // namespace _internal
+} // namespace _internal
 
 } // namespace termcolor
-
 
 #undef TERMCOLOR_OS_WINDOWS
 #undef TERMCOLOR_OS_MACOS
@@ -659,7 +519,6 @@ namespace termcolor
 
 #pragma once
 #include <utility>
-
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -697,7 +556,6 @@ static inline size_t terminal_width() { return terminal_size().second; }
 } // namespace indicators
 
 #endif
-
 
 /*
 Activity Indicators for Modern C++
@@ -1304,13 +1162,9 @@ static inline int display_width(const std::wstring &input) {
 
 #else
 
-static inline int display_width(const std::string &input) {
-  return input.length();
-}
+static inline int display_width(const std::string &input) { return input.length(); }
 
-static inline int display_width(const std::wstring &input) {
-  return input.length();
-}
+static inline int display_width(const std::wstring &input) { return input.length(); }
 
 #endif
 
@@ -1545,8 +1399,8 @@ private:
 // #include <indicators/terminal_size.hpp>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <tuple>
@@ -1557,45 +1411,42 @@ namespace indicators {
 
 class ProgressBar {
   using Settings =
-      std::tuple<option::BarWidth, option::PrefixText, option::PostfixText,
-                 option::Start, option::End, option::Fill, option::Lead,
-                 option::Remainder, option::MaxPostfixTextLen,
-                 option::Completed, option::ShowPercentage,
-                 option::ShowElapsedTime, option::ShowRemainingTime,
-                 option::SavedStartTime, option::ForegroundColor,
-                 option::FontStyles, option::MinProgress, option::MaxProgress,
-                 option::ProgressType, option::Stream>;
+      std::tuple<option::BarWidth, option::PrefixText, option::PostfixText, option::Start,
+                 option::End, option::Fill, option::Lead, option::Remainder,
+                 option::MaxPostfixTextLen, option::Completed, option::ShowPercentage,
+                 option::ShowElapsedTime, option::ShowRemainingTime, option::SavedStartTime,
+                 option::ForegroundColor, option::FontStyles, option::MinProgress,
+                 option::MaxProgress, option::ProgressType, option::Stream>;
 
 public:
   template <typename... Args,
-            typename std::enable_if<
-                details::are_settings_from_tuple<
-                    Settings, typename std::decay<Args>::type...>::value,
-                void *>::type = nullptr>
+            typename std::enable_if<details::are_settings_from_tuple<
+                                        Settings, typename std::decay<Args>::type...>::value,
+                                    void *>::type = nullptr>
   explicit ProgressBar(Args &&... args)
       : settings_(
-            details::get<details::ProgressBarOption::bar_width>(
-                option::BarWidth{100}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::prefix_text>(
-                option::PrefixText{}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::postfix_text>(
-                option::PostfixText{}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::start>(
-                option::Start{"["}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::end>(
-                option::End{"]"}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::fill>(
-                option::Fill{"="}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::lead>(
-                option::Lead{">"}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::remainder>(
-                option::Remainder{" "}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::bar_width>(option::BarWidth{100},
+                                                                std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::prefix_text>(option::PrefixText{},
+                                                                  std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::postfix_text>(option::PostfixText{},
+                                                                   std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::start>(option::Start{"["},
+                                                            std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::end>(option::End{"]"},
+                                                          std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::fill>(option::Fill{"="},
+                                                           std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::lead>(option::Lead{">"},
+                                                           std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::remainder>(option::Remainder{" "},
+                                                                std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::max_postfix_text_len>(
                 option::MaxPostfixTextLen{0}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::completed>(
-                option::Completed{false}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::show_percentage>(
-                option::ShowPercentage{false}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::completed>(option::Completed{false},
+                                                                std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::show_percentage>(option::ShowPercentage{false},
+                                                                      std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::show_elapsed_time>(
                 option::ShowElapsedTime{false}, std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::show_remaining_time>(
@@ -1603,20 +1454,17 @@ public:
             details::get<details::ProgressBarOption::saved_start_time>(
                 option::SavedStartTime{false}, std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::foreground_color>(
-                option::ForegroundColor{Color::unspecified},
-                std::forward<Args>(args)...),
+                option::ForegroundColor{Color::unspecified}, std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::font_styles>(
-                option::FontStyles{std::vector<FontStyle>{}},
-                std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::min_progress>(
-                option::MinProgress{0}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::max_progress>(
-                option::MaxProgress{100}, std::forward<Args>(args)...),
+                option::FontStyles{std::vector<FontStyle>{}}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::min_progress>(option::MinProgress{0},
+                                                                   std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::max_progress>(option::MaxProgress{100},
+                                                                   std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::progress_type>(
-                option::ProgressType{ProgressType::incremental},
-                std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::stream>(
-                option::Stream{std::cout}, std::forward<Args>(args)...)) {
+                option::ProgressType{ProgressType::incremental}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::stream>(option::Stream{std::cout},
+                                                             std::forward<Args>(args)...)) {
 
     // if progress is incremental, start from min_progress
     // else start from max_progress
@@ -1629,47 +1477,38 @@ public:
 
   template <typename T, details::ProgressBarOption id>
   void set_option(details::Setting<T, id> &&setting) {
-    static_assert(
-        !std::is_same<T, typename std::decay<decltype(details::get_value<id>(
-                             std::declval<Settings>()))>::type>::value,
-        "Setting has wrong type!");
+    static_assert(!std::is_same<T, typename std::decay<decltype(details::get_value<id>(
+                                       std::declval<Settings>()))>::type>::value,
+                  "Setting has wrong type!");
     std::lock_guard<std::mutex> lock(mutex_);
     get_value<id>() = std::move(setting).value;
   }
 
   template <typename T, details::ProgressBarOption id>
   void set_option(const details::Setting<T, id> &setting) {
-    static_assert(
-        !std::is_same<T, typename std::decay<decltype(details::get_value<id>(
-                             std::declval<Settings>()))>::type>::value,
-        "Setting has wrong type!");
+    static_assert(!std::is_same<T, typename std::decay<decltype(details::get_value<id>(
+                                       std::declval<Settings>()))>::type>::value,
+                  "Setting has wrong type!");
     std::lock_guard<std::mutex> lock(mutex_);
     get_value<id>() = setting.value;
   }
 
-  void
-  set_option(const details::Setting<
-             std::string, details::ProgressBarOption::postfix_text> &setting) {
+  void set_option(
+      const details::Setting<std::string, details::ProgressBarOption::postfix_text> &setting) {
     std::lock_guard<std::mutex> lock(mutex_);
     get_value<details::ProgressBarOption::postfix_text>() = setting.value;
-    if (setting.value.length() >
-        get_value<details::ProgressBarOption::max_postfix_text_len>()) {
-      get_value<details::ProgressBarOption::max_postfix_text_len>() =
-          setting.value.length();
+    if (setting.value.length() > get_value<details::ProgressBarOption::max_postfix_text_len>()) {
+      get_value<details::ProgressBarOption::max_postfix_text_len>() = setting.value.length();
     }
   }
 
-  void set_option(
-      details::Setting<std::string, details::ProgressBarOption::postfix_text>
-          &&setting) {
+  void
+  set_option(details::Setting<std::string, details::ProgressBarOption::postfix_text> &&setting) {
     std::lock_guard<std::mutex> lock(mutex_);
-    get_value<details::ProgressBarOption::postfix_text>() =
-        std::move(setting).value;
+    get_value<details::ProgressBarOption::postfix_text>() = std::move(setting).value;
     auto &new_value = get_value<details::ProgressBarOption::postfix_text>();
-    if (new_value.length() >
-        get_value<details::ProgressBarOption::max_postfix_text_len>()) {
-      get_value<details::ProgressBarOption::max_postfix_text_len>() =
-          new_value.length();
+    if (new_value.length() > get_value<details::ProgressBarOption::max_postfix_text_len>()) {
+      get_value<details::ProgressBarOption::max_postfix_text_len>() = new_value.length();
     }
   }
 
@@ -1698,14 +1537,10 @@ public:
 
   size_t current() {
     std::lock_guard<std::mutex> lock{mutex_};
-    return std::min(
-        progress_,
-        size_t(get_value<details::ProgressBarOption::max_progress>()));
+    return std::min(progress_, size_t(get_value<details::ProgressBarOption::max_progress>()));
   }
 
-  bool is_completed() const {
-    return get_value<details::ProgressBarOption::completed>();
-  }
+  bool is_completed() const { return get_value<details::ProgressBarOption::completed>(); }
 
   void mark_as_completed() {
     get_value<details::ProgressBarOption::completed>() = true;
@@ -1714,14 +1549,13 @@ public:
 
 private:
   template <details::ProgressBarOption id>
-  auto get_value()
-      -> decltype((details::get_value<id>(std::declval<Settings &>()).value)) {
+  auto get_value() -> decltype((details::get_value<id>(std::declval<Settings &>()).value)) {
     return details::get_value<id>(settings_).value;
   }
 
   template <details::ProgressBarOption id>
-  auto get_value() const -> decltype(
-      (details::get_value<id>(std::declval<const Settings &>()).value)) {
+  auto get_value() const
+      -> decltype((details::get_value<id>(std::declval<const Settings &>()).value)) {
     return details::get_value<id>(settings_).value;
   }
 
@@ -1736,12 +1570,9 @@ private:
   std::atomic<bool> multi_progress_mode_{false};
 
   void save_start_time() {
-    auto &show_elapsed_time =
-        get_value<details::ProgressBarOption::show_elapsed_time>();
-    auto &saved_start_time =
-        get_value<details::ProgressBarOption::saved_start_time>();
-    auto &show_remaining_time =
-        get_value<details::ProgressBarOption::show_remaining_time>();
+    auto &show_elapsed_time = get_value<details::ProgressBarOption::show_elapsed_time>();
+    auto &saved_start_time = get_value<details::ProgressBarOption::saved_start_time>();
+    auto &show_remaining_time = get_value<details::ProgressBarOption::show_remaining_time>();
     if ((show_elapsed_time || show_remaining_time) && !saved_start_time) {
       start_time_point_ = std::chrono::high_resolution_clock::now();
       saved_start_time = true;
@@ -1758,19 +1589,16 @@ private:
 
   std::pair<std::string, size_t> get_postfix_text() {
     std::stringstream os;
-    const auto max_progress =
-        get_value<details::ProgressBarOption::max_progress>();
+    const auto max_progress = get_value<details::ProgressBarOption::max_progress>();
 
     if (get_value<details::ProgressBarOption::show_percentage>()) {
       os << " "
-         << std::min(static_cast<size_t>(static_cast<float>(progress_) /
-                                         max_progress * 100),
+         << std::min(static_cast<size_t>(static_cast<float>(progress_) / max_progress * 100),
                      size_t(100))
          << "%";
     }
 
-    auto &saved_start_time =
-        get_value<details::ProgressBarOption::saved_start_time>();
+    auto &saved_start_time = get_value<details::ProgressBarOption::saved_start_time>();
 
     if (get_value<details::ProgressBarOption::show_elapsed_time>()) {
       os << " [";
@@ -1788,8 +1616,7 @@ private:
 
       if (saved_start_time) {
         auto eta = std::chrono::nanoseconds(
-            progress_ > 0 ? static_cast<long long>(elapsed_.count() *
-                                                   max_progress / progress_)
+            progress_ > 0 ? static_cast<long long>(elapsed_.count() * max_progress / progress_)
                           : 0);
         auto remaining = eta > elapsed_ ? (eta - elapsed_) : (elapsed_ - eta);
         details::write_duration(os, remaining);
@@ -1817,10 +1644,8 @@ public:
     auto &os = get_value<details::ProgressBarOption::stream>();
 
     const auto type = get_value<details::ProgressBarOption::progress_type>();
-    const auto min_progress =
-        get_value<details::ProgressBarOption::min_progress>();
-    const auto max_progress =
-        get_value<details::ProgressBarOption::max_progress>();
+    const auto min_progress = get_value<details::ProgressBarOption::min_progress>();
+    const auto max_progress = get_value<details::ProgressBarOption::max_progress>();
     if (multi_progress_mode_ && !from_multi_progress) {
       if ((type == ProgressType::incremental && progress_ >= max_progress) ||
           (type == ProgressType::decremental && progress_ <= min_progress)) {
@@ -1830,13 +1655,10 @@ public:
     }
     auto now = std::chrono::high_resolution_clock::now();
     if (!get_value<details::ProgressBarOption::completed>())
-      elapsed_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          now - start_time_point_);
+      elapsed_ = std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time_point_);
 
-    if (get_value<details::ProgressBarOption::foreground_color>() !=
-        Color::unspecified)
-      details::set_stream_color(
-          os, get_value<details::ProgressBarOption::foreground_color>());
+    if (get_value<details::ProgressBarOption::foreground_color>() != Color::unspecified)
+      details::set_stream_color(os, get_value<details::ProgressBarOption::foreground_color>());
 
     for (auto &style : get_value<details::ProgressBarOption::font_styles>())
       details::set_font_style(os, style);
@@ -1848,11 +1670,10 @@ public:
 
     os << get_value<details::ProgressBarOption::start>();
 
-    details::ProgressScaleWriter writer{
-        os, get_value<details::ProgressBarOption::bar_width>(),
-        get_value<details::ProgressBarOption::fill>(),
-        get_value<details::ProgressBarOption::lead>(),
-        get_value<details::ProgressBarOption::remainder>()};
+    details::ProgressScaleWriter writer{os, get_value<details::ProgressBarOption::bar_width>(),
+                                        get_value<details::ProgressBarOption::fill>(),
+                                        get_value<details::ProgressBarOption::lead>(),
+                                        get_value<details::ProgressBarOption::remainder>()};
     writer.write(double(progress_) / double(max_progress) * 100.0f);
 
     os << get_value<details::ProgressBarOption::end>();
@@ -1868,7 +1689,8 @@ public:
     const auto end_length = get_value<details::ProgressBarOption::end>().size();
     const auto terminal_width = terminal_size().second;
     // prefix + bar_width + postfix should be <= terminal_width
-    const int remaining = terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
+    const int remaining =
+        terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
     if (remaining > 0) {
       os << std::string(remaining, ' ') << "\r";
     } else if (remaining < 0) {
@@ -1900,8 +1722,8 @@ public:
 // #include <indicators/terminal_size.hpp>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <tuple>
@@ -2153,7 +1975,8 @@ public:
     const auto end_length = get_value<details::ProgressBarOption::end>().size();
     const auto terminal_width = terminal_size().second;
     // prefix + bar_width + postfix should be <= terminal_width
-    const int remaining = terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
+    const int remaining =
+        terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
     if (remaining > 0) {
       os << std::string(remaining, ' ') << "\r";
     } else if (remaining < 0) {
@@ -2186,11 +2009,11 @@ public:
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <tuple>
 #include <type_traits>
-#include <sstream>
 #include <utility>
 
 namespace indicators {
@@ -2390,7 +2213,8 @@ public:
     const auto end_length = get_value<details::ProgressBarOption::end>().size();
     const auto terminal_width = terminal_size().second;
     // prefix + bar_width + postfix should be <= terminal_width
-    const int remaining = terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
+    const int remaining =
+        terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
     if (remaining > 0) {
       os << std::string(remaining, ' ') << "\r";
     } else if (remaining < 0) {
@@ -2782,9 +2606,7 @@ public:
       os << get_value<details::ProgressBarOption::spinner_states>()
               [index_ % get_value<details::ProgressBarOption::spinner_states>().size()];
     if (get_value<details::ProgressBarOption::show_percentage>()) {
-      os << " " << 
-        std::size_t(progress_ / double(max_progress) * 100)
-        << "%";
+      os << " " << std::size_t(progress_ / double(max_progress) * 100) << "%";
     }
 
     if (get_value<details::ProgressBarOption::show_elapsed_time>()) {
@@ -4421,19 +4243,13 @@ public:
 using trim_whitespace = trim_characters<' ', '\t'>;
 } // namespace trim_policy
 
-template <char character> struct delimiter {
-  constexpr static char value = character;
-};
+template <char character> struct delimiter { constexpr static char value = character; };
 
-template <char character> struct quote_character {
-  constexpr static char value = character;
-};
+template <char character> struct quote_character { constexpr static char value = character; };
 
-template <bool flag> struct first_row_is_header {
-  constexpr static bool value = flag;
-};
+template <bool flag> struct first_row_is_header { constexpr static bool value = flag; };
 
-}
+} // namespace csv2
 #pragma once
 #include <cstring>
 // #include <csv2/mio.hpp>
@@ -4447,11 +4263,11 @@ template <class delimiter = delimiter<','>, class quote_character = quote_charac
           class first_row_is_header = first_row_is_header<true>,
           class trim_policy = trim_policy::trim_whitespace>
 class Reader {
-  mio::mmap_source mmap_;          // mmap source
-  const char *buffer_{nullptr};    // pointer to memory-mapped data
-  size_t buffer_size_{0};          // mapped length of buffer
-  size_t header_start_{0};         // start index of header (cache)
-  size_t header_end_{0};           // end index of header (cache)
+  mio::mmap_source mmap_;       // mmap source
+  const char *buffer_{nullptr}; // pointer to memory-mapped data
+  size_t buffer_size_{0};       // mapped length of buffer
+  size_t header_start_{0};      // start index of header (cache)
+  size_t header_end_{0};        // end index of header (cache)
 
 public:
   // Use this if you'd like to mmap the CSV file
@@ -4634,7 +4450,8 @@ public:
       return end();
     if (first_row_is_header::value) {
       const auto header_indices = header_indices_();
-      return RowIterator(buffer_, buffer_size_, header_indices.second  > 0 ? header_indices.second + 1 : 0);
+      return RowIterator(buffer_, buffer_size_,
+                         header_indices.second > 0 ? header_indices.second + 1 : 0);
     } else {
       return RowIterator(buffer_, buffer_size_, 0);
     }
@@ -4654,7 +4471,6 @@ private:
   }
 
 public:
-
   Row header() const {
     size_t start = 0, end = 0;
     Row result;
@@ -4692,47 +4508,42 @@ public:
 #include <cstring>
 // #include <csv2/parameters.hpp>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <utility>
-#include <iostream>
 
 namespace csv2 {
 
-template <class delimiter = delimiter<','>>
-class Writer {
-    std::ofstream& stream_;    // output stream for the writer
+template <class delimiter = delimiter<','>> class Writer {
+  std::ofstream &stream_; // output stream for the writer
 public:
-    template <typename Stream>
-    Writer(Stream&& stream) : stream_(std::forward<Stream>(stream)) {}
+  template <typename Stream> Writer(Stream &&stream) : stream_(std::forward<Stream>(stream)) {}
 
-    ~Writer() {
-        stream_.close();
-    }
+  ~Writer() { stream_.close(); }
 
-    template <typename Container>
-    void write_row(Container&& row) {
-        const auto& strings = std::forward<Container>(row);
-        const auto delimiter_string = std::string(1, delimiter::value);
-        std::copy(strings.begin(), strings.end() - 1,
-            std::ostream_iterator<std::string>(stream_, delimiter_string.c_str()));
-        stream_ << strings.back() << "\n";
-    }
+  template <typename Container> void write_row(Container &&row) {
+    const auto &strings = std::forward<Container>(row);
+    const auto delimiter_string = std::string(1, delimiter::value);
+    std::copy(strings.begin(), strings.end() - 1,
+              std::ostream_iterator<std::string>(stream_, delimiter_string.c_str()));
+    stream_ << strings.back() << "\n";
+  }
 
-    template <typename Container>
-    void write_rows(Container&& rows) {
-        const auto& container_of_rows = std::forward<Container>(rows);
-        for (const auto& row : container_of_rows) {
-            write_row(row);
-        }
+  template <typename Container> void write_rows(Container &&rows) {
+    const auto &container_of_rows = std::forward<Container>(rows);
+    for (const auto &row : container_of_rows) {
+      write_row(row);
     }
+  }
 };
 
-}#pragma once
+} // namespace csv2
+#pragma once
 // #include <criterion/details/csv2.hpp>
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <string>
-#include <map>
 // #include <criterion/details/benchmark_result.hpp>
 #include <string>
 
@@ -4761,22 +4572,23 @@ class csv_writer {
     return os.str();
   }
 
-  static std::vector<std::string> to_csv_row(const benchmark_result& result) {
-    return std::vector<std::string> {
-      "\"" + result.name + "\"",
-      std::to_string(result.num_warmup_runs),
-      std::to_string(result.num_runs),
-      std::to_string(result.num_iterations),
-      // nanoseconds
-      duration_to_string(result.best_estimate_mean),
-      duration_to_string(result.best_estimate_rsd),
-      duration_to_string(result.overall_best_execution_time),
-      duration_to_string(result.overall_worst_execution_time),
+  static std::vector<std::string> to_csv_row(const benchmark_result &result) {
+    return std::vector<std::string>{
+        "\"" + result.name + "\"",
+        std::to_string(result.num_warmup_runs),
+        std::to_string(result.num_runs),
+        std::to_string(result.num_iterations),
+        // nanoseconds
+        duration_to_string(result.best_estimate_mean),
+        duration_to_string(result.best_estimate_rsd),
+        duration_to_string(result.overall_best_execution_time),
+        duration_to_string(result.overall_worst_execution_time),
     };
   }
 
 public:
-  static bool write_results(const std::string& filename, const std::map<std::string, benchmark_result>& results) {
+  static bool write_results(const std::string &filename,
+                            const std::map<std::string, benchmark_result> &results) {
     bool result{false};
 
     std::ofstream stream(filename);
@@ -4787,17 +4599,11 @@ public:
       result = true;
 
       writer.write_row(std::vector<std::string>{
-        "\"Name\"",
-        "\"Warmup Runs\"",
-        "\"Benchmark Runs\"",
-        "\"Iterations per Run\"",
-        "\"Best Estimate Mean (ns)\"",
-        "\"Best Estimate RSD (%)\"",
-        "\"Overall Best Execution Time (ns)\"",
-        "\"Overall Worst Execution Time (ns)\""
-      });
+          "\"Name\"", "\"Warmup Runs\"", "\"Benchmark Runs\"", "\"Iterations per Run\"",
+          "\"Best Estimate Mean (ns)\"", "\"Best Estimate RSD (%)\"",
+          "\"Overall Best Execution Time (ns)\"", "\"Overall Worst Execution Time (ns)\""});
 
-      for (const auto& kvpair: results) {
+      for (const auto &kvpair : results) {
         writer.write_row(to_csv_row(kvpair.second));
       }
     }
@@ -4807,7 +4613,8 @@ public:
   }
 };
 
-}#pragma once
+} // namespace criterion
+#pragma once
 #include <chrono>
 #include <functional>
 #include <optional>
@@ -4819,36 +4626,36 @@ namespace criterion {
 struct benchmark_config {
   static inline std::tuple<> empty_tuple{};
   std::string name;
-  using Fn = std::function<void(std::chrono::steady_clock::time_point&, // start time stamp
-                                std::optional<std::chrono::steady_clock::time_point>&, // teardown time stamp
-                                void * parameters)>; // benchmark parameters
+  using Fn = std::function<void(
+      std::chrono::steady_clock::time_point &,                // start time stamp
+      std::optional<std::chrono::steady_clock::time_point> &, // teardown time stamp
+      void *parameters)>;                                     // benchmark parameters
   Fn fn;
-  std::string parameterized_instance_name = ""; 
-  void * parameters = (void *)(&empty_tuple);
+  std::string parameterized_instance_name = "";
+  void *parameters = (void *)(&empty_tuple);
 
-  enum class benchmark_reporting_type {
-    console
-  };
+  enum class benchmark_reporting_type { console };
   benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
 };
 
-}#pragma once
+}
+#pragma once
 #include <string>
 
-namespace criterion {
+    namespace criterion {
 
-struct benchmark_result {
-  std::string name;
-  std::size_t num_warmup_runs;
-  std::size_t num_runs;
-  std::size_t num_iterations;
-  long double best_estimate_mean;
-  long double best_estimate_rsd;
-  long double overall_best_execution_time;
-  long double overall_worst_execution_time;
-};
-
-}#pragma once
+  struct benchmark_result {
+    std::string name;
+    std::size_t num_warmup_runs;
+    std::size_t num_runs;
+    std::size_t num_iterations;
+    long double best_estimate_mean;
+    long double best_estimate_rsd;
+    long double overall_best_execution_time;
+    long double overall_worst_execution_time;
+  };
+}
+#pragma once
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -4860,419 +4667,394 @@ struct benchmark_result {
 #include <map>
 #include <numeric>
 #include <optional>
-#include <string>
 #include <sstream>
+#include <string>
 #include <thread>
 #include <utility>
 
-// #include <criterion/details/benchmark_config.hpp>
-// #include <criterion/details/benchmark_result.hpp>
-// #include <criterion/details/indicators.hpp>
+    // #include <criterion/details/benchmark_config.hpp>
+    // #include <criterion/details/benchmark_result.hpp>
+    // #include <criterion/details/indicators.hpp>
 
-namespace criterion {
+    namespace criterion {
 
-class benchmark {
-  benchmark_config config_;
-  using Fn = benchmark_config::Fn;
+  class benchmark {
+    benchmark_config config_;
+    using Fn = benchmark_config::Fn;
 
-  std::size_t warmup_runs_{3};
-  std::size_t num_iterations_{0};
-  std::size_t max_num_runs_{0};
+    std::size_t warmup_runs_{3};
+    std::size_t num_iterations_{0};
+    std::size_t max_num_runs_{0};
 
-  long double estimate_minimum_measurement_cost() {
-    using namespace std::chrono;
-    std::vector<long double> durations;
+    long double estimate_minimum_measurement_cost() {
+      using namespace std::chrono;
+      std::vector<long double> durations;
 
-    for (std::size_t i = 0; i < 10; i++) {
-      const auto start = steady_clock::now();
-      // do nothing
-      const auto end = steady_clock::now();
-      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-      durations.push_back(execution_time);
-    }
-    return *std::min_element(durations.begin(), durations.end());
-  }
-
-  long double estimate_execution_time() {
-    using namespace std::chrono;
-
-    long double result;
-    bool first_run{true};
-    for (std::size_t i = 0; i < warmup_runs_; i++) {
-      std::chrono::steady_clock::time_point start_timestamp;
-      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-      const auto start = steady_clock::now();
-      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
-      const auto end = steady_clock::now();
-      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-      if (first_run) {
-        result = execution_time;
-        first_run = false;
+      for (std::size_t i = 0; i < 10; i++) {
+        const auto start = steady_clock::now();
+        // do nothing
+        const auto end = steady_clock::now();
+        const auto execution_time =
+            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+        durations.push_back(execution_time);
       }
-      else {
-        result = std::min(execution_time, result);
-      }
-    }
-    return result;
-  }
-
-  void update_iterations() {
-    auto early_estimate_execution_time = estimate_execution_time();
-
-    if (early_estimate_execution_time < 1)
-      early_estimate_execution_time = 1;
-
-    num_iterations_ = 10; // fixed
-    const auto min_runs = 10;
-    const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
-    const auto ten_seconds = 1e+10;
-    const auto two_seconds = 2e+9;
-
-    auto max_benchmark_time = ten_seconds;
-    if (early_estimate_execution_time < 1000) { // nanoseconds
-      max_benchmark_time = two_seconds;
+      return *std::min_element(durations.begin(), durations.end());
     }
 
-    const auto benchmark_time = std::max(double(min_benchmark_time), max_benchmark_time);
-    const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
+    long double estimate_execution_time() {
+      using namespace std::chrono;
 
-    max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
-
-    max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
-  }
-
-  std::string duration_to_string(const long double& ns) {
-    std::stringstream os;
-    if (ns < 1E3) {
-      os << std::setprecision(3) << ns << "ns";
-    }
-    else if (ns < 1E6) {
-      os << std::setprecision(3) << (ns / 1E3) << "us";
-    }
-    else if (ns < 1E9) {
-      os << std::setprecision(3) << (ns / 1E6) << "ms";
-    }
-    else {
-      os << std::setprecision(3) << (ns / 1E9) << "s";
-    }
-    return os.str();
-  }
-
-public:
-
-  benchmark(const benchmark_config& config): 
-    config_(config) {}
-
-  static inline std::map<std::string, benchmark_result> results;
-
-  void run() {
-
-    using namespace std::chrono;
-
-    // run empty function to estimate minimum delay in scheduling and executing user function
-    const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
-
-    const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
-    // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
-
-    using namespace indicators;
-
-    show_console_cursor(false);
-
-    // Get an early estimate for execution time
-    // Update number of iterations to run for this benchmark based on estimate
-    update_iterations();
-
-    ProgressBar spinner{
-      option::PrefixText{prefix},
-      option::BarWidth{10},
-      option::Lead{"■"},
-      option::Fill{"■"},
-      option::Remainder{"-"},
-      option::ForegroundColor{Color::white},
-      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-      // option::ShowSpinner{false},
-      option::ShowElapsedTime{true},
-      option::ShowRemainingTime{true}
-    };
-
-    spinner.set_option(option::MaxProgress{max_num_runs_});
-
-    long double lowest_rsd = 100;
-    long double best_estimate_mean = 0;
-    bool first_run{true};
-
-    long double overall_best_execution_time = 0;
-    long double overall_worst_execution_time = 0;
-
-    std::size_t num_runs = 0;
-    spinner.set_progress(num_runs);
-
-    std::array<long double, 10> durations;
-
-    while(true) {
-      // Benchmark runs
-      for (std::size_t i = 0; i < num_iterations_; i++) {
+      long double result;
+      bool first_run{true};
+      for (std::size_t i = 0; i < warmup_runs_; i++) {
+        std::chrono::steady_clock::time_point start_timestamp;
         std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-        auto start = steady_clock::now();
-        config_.fn(start, teardown_timestamp, config_.parameters);
-        auto end = steady_clock::now();
-        if (teardown_timestamp)
-          end = teardown_timestamp.value();
-        const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
-        durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
-      }
-      auto size = num_iterations_;
-      const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
-
-      long double E = 0;
-      for (std::size_t i = 0; i < size; i++) {
-        E += std::pow(durations[i] - mean, 2);
-      }
-      const long double variance = E / size;
-      const long double standard_deviation = std::sqrt(variance);
-      const long double relative_standard_deviation = standard_deviation * 100 / mean;
-
-      if (first_run) {
-        lowest_rsd = relative_standard_deviation;
-        best_estimate_mean = mean;
-        overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
-        overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
-        first_run = false;
-      }
-      else {
-        // Save record of lowest RSD
-        const auto current_lowest_rsd = lowest_rsd;
-        lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
-        if (lowest_rsd < current_lowest_rsd) {
-          // There's a new LOWEST relative standard deviation
-
-          if (mean < best_estimate_mean) {
-            best_estimate_mean = mean; // new mean is lower
-          } 
-          else {
-            lowest_rsd = current_lowest_rsd; // go back to old estimate
-          }
+        const auto start = steady_clock::now();
+        config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
+        const auto end = steady_clock::now();
+        const auto execution_time =
+            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+        if (first_run) {
+          result = execution_time;
+          first_run = false;
         } else {
-          lowest_rsd = current_lowest_rsd; // go back to old estimate
+          result = std::min(execution_time, result);
         }
+      }
+      return result;
+    }
 
-        // Save best and worst duration
-        overall_best_execution_time = std::min(overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
-        overall_worst_execution_time = std::max(overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
+    void update_iterations() {
+      auto early_estimate_execution_time = estimate_execution_time();
+
+      if (early_estimate_execution_time < 1)
+        early_estimate_execution_time = 1;
+
+      num_iterations_ = 10; // fixed
+      const auto min_runs = 10;
+      const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
+      const auto ten_seconds = 1e+10;
+      const auto two_seconds = 2e+9;
+
+      auto max_benchmark_time = ten_seconds;
+      if (early_estimate_execution_time < 1000) { // nanoseconds
+        max_benchmark_time = two_seconds;
       }
 
+      const auto benchmark_time = std::max(double(min_benchmark_time), max_benchmark_time);
+      const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
+
+      max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
+
+      max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
+    }
+
+    std::string duration_to_string(const long double &ns) {
+      std::stringstream os;
+      if (ns < 1E3) {
+        os << std::setprecision(3) << ns << "ns";
+      } else if (ns < 1E6) {
+        os << std::setprecision(3) << (ns / 1E3) << "us";
+      } else if (ns < 1E9) {
+        os << std::setprecision(3) << (ns / 1E6) << "ms";
+      } else {
+        os << std::setprecision(3) << (ns / 1E9) << "s";
+      }
+      return os.str();
+    }
+
+  public:
+    benchmark(const benchmark_config &config) : config_(config) {}
+
+    static inline std::map<std::string, benchmark_result> results;
+
+    void run() {
+
+      using namespace std::chrono;
+
+      // run empty function to estimate minimum delay in scheduling and executing user function
+      const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
+
+      const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
+      // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
+
+      using namespace indicators;
+
+      show_console_cursor(false);
+
+      // Get an early estimate for execution time
+      // Update number of iterations to run for this benchmark based on estimate
+      update_iterations();
+
+      ProgressBar spinner{option::PrefixText{prefix}, option::BarWidth{10}, option::Lead{"■"},
+                          option::Fill{"■"}, option::Remainder{"-"},
+                          option::ForegroundColor{Color::white},
+                          option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+                          // option::ShowSpinner{false},
+                          option::ShowElapsedTime{true}, option::ShowRemainingTime{true}};
+
+      spinner.set_option(option::MaxProgress{max_num_runs_});
+
+      long double lowest_rsd = 100;
+      long double best_estimate_mean = 0;
+      bool first_run{true};
+
+      long double overall_best_execution_time = 0;
+      long double overall_worst_execution_time = 0;
+
+      std::size_t num_runs = 0;
       spinner.set_progress(num_runs);
 
-      // Show iteration as postfix text
-      // std::stringstream os;
-      // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
-      // spinner.set_option(option::PostfixText{os.str()});
+      std::array<long double, 10> durations;
 
-      if (num_runs >= max_num_runs_) {
-        break;
+      while (true) {
+        // Benchmark runs
+        for (std::size_t i = 0; i < num_iterations_; i++) {
+          std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+          auto start = steady_clock::now();
+          config_.fn(start, teardown_timestamp, config_.parameters);
+          auto end = steady_clock::now();
+          if (teardown_timestamp)
+            end = teardown_timestamp.value();
+          const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
+          durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
+        }
+        auto size = num_iterations_;
+        const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
+
+        long double E = 0;
+        for (std::size_t i = 0; i < size; i++) {
+          E += std::pow(durations[i] - mean, 2);
+        }
+        const long double variance = E / size;
+        const long double standard_deviation = std::sqrt(variance);
+        const long double relative_standard_deviation = standard_deviation * 100 / mean;
+
+        if (first_run) {
+          lowest_rsd = relative_standard_deviation;
+          best_estimate_mean = mean;
+          overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
+          overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+          first_run = false;
+        } else {
+          // Save record of lowest RSD
+          const auto current_lowest_rsd = lowest_rsd;
+          lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
+          if (lowest_rsd < current_lowest_rsd) {
+            // There's a new LOWEST relative standard deviation
+
+            if (mean < best_estimate_mean) {
+              best_estimate_mean = mean; // new mean is lower
+            } else {
+              lowest_rsd = current_lowest_rsd; // go back to old estimate
+            }
+          } else {
+            lowest_rsd = current_lowest_rsd; // go back to old estimate
+          }
+
+          // Save best and worst duration
+          overall_best_execution_time = std::min(
+              overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
+          overall_worst_execution_time = std::max(
+              overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
+        }
+
+        spinner.set_progress(num_runs);
+
+        // Show iteration as postfix text
+        // std::stringstream os;
+        // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
+        // spinner.set_option(option::PostfixText{os.str()});
+
+        if (num_runs >= max_num_runs_) {
+          break;
+        }
+
+        num_runs += 1;
       }
 
-      num_runs += 1;
+      std::cout << termcolor::bold << termcolor::green << std::setprecision(3) << "    "
+                << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+                << " {Best: " << duration_to_string(overall_best_execution_time)
+                << ", Worst: " << duration_to_string(overall_worst_execution_time) << "}\n\n"
+                << termcolor::reset;
+
+      results.insert(std::make_pair(
+          prefix, benchmark_result{.name = config_.name + config_.parameterized_instance_name,
+                                   .num_warmup_runs = warmup_runs_,
+                                   .num_runs = max_num_runs_,
+                                   .num_iterations = num_iterations_,
+                                   .best_estimate_mean = best_estimate_mean,
+                                   .best_estimate_rsd = lowest_rsd,
+                                   .overall_best_execution_time = overall_best_execution_time,
+                                   .overall_worst_execution_time = overall_worst_execution_time}));
+
+      indicators::show_console_cursor(true);
     }
-
-    std::cout 
-      << termcolor::bold 
-      << termcolor::green 
-      << std::setprecision(3)
-      << "    "
-      << duration_to_string(best_estimate_mean) 
-      << " ± " << lowest_rsd << "%"
-      << " {Best: "
-      << duration_to_string(overall_best_execution_time) << ", Worst: "
-      << duration_to_string(overall_worst_execution_time)
-      << "}\n\n"
-      << termcolor::reset;
-
-    results.insert(std::make_pair(
-      prefix,
-      benchmark_result {
-        .name = config_.name + config_.parameterized_instance_name,
-        .num_warmup_runs = warmup_runs_,
-        .num_runs = max_num_runs_,
-        .num_iterations = num_iterations_,
-        .best_estimate_mean = best_estimate_mean,
-        .best_estimate_rsd = lowest_rsd,
-        .overall_best_execution_time = overall_best_execution_time,
-        .overall_worst_execution_time = overall_worst_execution_time
-      }
-    ));
-
-    indicators::show_console_cursor(true);
-  }
-};
-
-}#pragma once
+  };
+}
+#pragma once
 // #include <criterion/details/benchmark.hpp>
 // #include <criterion/details/benchmark_config.hpp>
 // #include <criterion/details/csv_writer.hpp>
 #include <chrono>
 #include <functional>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
-namespace criterion {
+    namespace criterion {
 
-struct benchmark_registration_helper_struct {
-  static std::vector<benchmark_config> &
-  registered_benchmarks() {
-    static std::vector<benchmark_config> v;
-    return v;
-  }
-
-  static void register_benchmark(const benchmark_config& config) {
-    registered_benchmarks().push_back(config);
-  }
-
-  static void execute_registered_benchmarks() {
-    for (const auto& config : registered_benchmarks()) {
-      benchmark{config}.run();
+  struct benchmark_registration_helper_struct {
+    static std::vector<benchmark_config> &registered_benchmarks() {
+      static std::vector<benchmark_config> v;
+      return v;
     }
-  }
-};
 
+    static void register_benchmark(const benchmark_config &config) {
+      registered_benchmarks().push_back(config);
+    }
+
+    static void execute_registered_benchmarks() {
+      for (const auto &config : registered_benchmarks()) {
+        benchmark{config}.run();
+      }
+    }
+  };
 }
 
-#define SETUP_BENCHMARK(...)                                                   \
-  __VA_ARGS__                                                                  \
-  __benchmark_start_timestamp =                                                \
+#define SETUP_BENCHMARK(...)                                                                       \
+  __VA_ARGS__                                                                                      \
+  __benchmark_start_timestamp =                                                                    \
       std::chrono::steady_clock::now(); // updated benchmark start timestamp
 
-#define TEARDOWN_BENCHMARK(...)                                                \
-  __benchmark_teardown_timestamp = std::chrono::steady_clock::now();           \
+#define TEARDOWN_BENCHMARK(...)                                                                    \
+  __benchmark_teardown_timestamp = std::chrono::steady_clock::now();                               \
   __VA_ARGS__
 
 namespace criterion {
 
 struct benchmark_template_registration_helper_struct {
-  static std::unordered_multimap<std::string, benchmark_config> & registered_benchmark_templates() {
+  static std::unordered_multimap<std::string, benchmark_config> &registered_benchmark_templates() {
     static std::unordered_multimap<std::string, benchmark_config> m;
     return m;
   }
 
-  static void register_benchmark_template(const benchmark_config& config) {
+  static void register_benchmark_template(const benchmark_config &config) {
     registered_benchmark_templates().insert({config.name, config});
   }
 
   template <class ArgTuple>
-  static void execute_registered_benchmark_template(const std::string& template_name, const std::string& instance_name, ArgTuple& arg_tuple) {
-    for (auto& [k, v] : registered_benchmark_templates()) {
+  static void execute_registered_benchmark_template(const std::string &template_name,
+                                                    const std::string &instance_name,
+                                                    ArgTuple &arg_tuple) {
+    for (auto &[k, v] : registered_benchmark_templates()) {
       if (k == template_name) {
         benchmark_registration_helper_struct::register_benchmark(
-          benchmark_config{ 
-            .name = template_name, 
-            .fn = v.fn,
-            .parameterized_instance_name = instance_name,
-            .parameters = (void *)(&arg_tuple)
-          }
-        );
+            benchmark_config{.name = template_name,
+                             .fn = v.fn,
+                             .parameterized_instance_name = instance_name,
+                             .parameters = (void *)(&arg_tuple)});
       }
     }
   }
 };
 
-}
+} // namespace criterion
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
 
-#define BENCHMARK_WITHOUT_PARAMETERS(Name) \
-  typedef std::tuple<> CONCAT(Name, BenchmarkParameters); \
-  namespace detail {                                                           \
-  /* forward declare the benchmark function that we define later */            \
-  template <class T = CONCAT(Name, BenchmarkParameters)> \
-  struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                    \
-    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                            \
-        std::chrono::steady_clock::time_point &,                               \
-        std::optional<std::chrono::steady_clock::time_point> &, \
-        void *);       \
-  };                                                                           \
-                                                                               \
-  namespace /* ensure internal linkage for struct */                           \
-  {                                                                            \
-  /* helper struct for static registration in ctor */                          \
-  struct CONCAT(Name, CONCAT(_register_struct_, __LINE__)) {                                 \
-    CONCAT(Name, CONCAT(_register_struct_, __LINE__))() { /* called once before main */      \
-      criterion::benchmark_template_registration_helper_struct::register_benchmark_template(criterion::benchmark_config{                            \
-          .name = #Name,                                                        \
-          .fn = CONCAT(Name, CONCAT(__benchmark_function_wrapper__,                         \
-                       __LINE__))<CONCAT(Name, BenchmarkParameters)>::CONCAT(Name, CONCAT(_registered_fun_, __LINE__))});        \
-    }                                                                          \
-  } CONCAT(Name, CONCAT(_register_struct_instance_, __LINE__));                              \
-  }                                                                            \
-  \
-  namespace /* ensure internal linkage for struct */                           \
-  {                                                                            \
-  static CONCAT(Name, BenchmarkParameters) CONCAT(CONCAT(Name, _benchmark_template_parameters), __LINE__) = {}; \
-  /* helper struct for static registration in ctor */                          \
-  struct CONCAT(Name, CONCAT(_instantiation_struct_, __LINE__)) {                                 \
-    CONCAT(Name, CONCAT(_instantiation_struct_, __LINE__))() { /* called once before main */      \
-      criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(Name, BenchmarkParameters)>(#Name, "", CONCAT(CONCAT(Name, _benchmark_template_parameters), __LINE__)); \
-    }                                                                          \
-  } CONCAT(Name, CONCAT(_instantiation_struct_instance_, __LINE__));                              \
-  } \
-  }                                                                            \
-                                                                               \
-  /* now actually defined to allow BENCHMARK("name") { ... } syntax */         \
-  template <class T> \
-  void detail::CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__))<T>::CONCAT(Name, CONCAT(       \
-      _registered_fun_, __LINE__))(                                             \
-      [[maybe_unused]] std::chrono::steady_clock::time_point &                 \
-          __benchmark_start_timestamp,                                         \
-      [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &  \
-          __benchmark_teardown_timestamp, \
-      [[maybe_unused]] void * __benchmark_parameters)
+#define BENCHMARK_WITHOUT_PARAMETERS(Name)                                                         \
+  typedef std::tuple<> CONCAT(Name, BenchmarkParameters);                                          \
+  namespace detail {                                                                               \
+  /* forward declare the benchmark function that we define later */                                \
+  template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
+  struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
+    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+        std::chrono::steady_clock::time_point &,                                                   \
+        std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
+  };                                                                                               \
+                                                                                                   \
+  namespace /* ensure internal linkage for struct */                                               \
+  {                                                                                                \
+  /* helper struct for static registration in ctor */                                              \
+  struct CONCAT(Name, CONCAT(_register_struct_, __LINE__)) {                                       \
+    CONCAT(Name, CONCAT(_register_struct_, __LINE__))() { /* called once before main */            \
+      criterion::benchmark_template_registration_helper_struct::register_benchmark_template(       \
+          criterion::benchmark_config{                                                             \
+              .name = #Name,                                                                       \
+              .fn = CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) <               \
+                    CONCAT(Name, BenchmarkParameters) >                                            \
+                    ::CONCAT(Name, CONCAT(_registered_fun_, __LINE__))});                          \
+    }                                                                                              \
+  } CONCAT(Name, CONCAT(_register_struct_instance_, __LINE__));                                    \
+  }                                                                                                \
+                                                                                                   \
+  namespace /* ensure internal linkage for struct */                                               \
+  {                                                                                                \
+  static CONCAT(Name, BenchmarkParameters)                                                         \
+      CONCAT(CONCAT(Name, _benchmark_template_parameters), __LINE__) = {};                         \
+  /* helper struct for static registration in ctor */                                              \
+  struct CONCAT(Name, CONCAT(_instantiation_struct_, __LINE__)) {                                  \
+    CONCAT(Name, CONCAT(_instantiation_struct_, __LINE__))() { /* called once before main */       \
+      criterion::benchmark_template_registration_helper_struct::                                   \
+          execute_registered_benchmark_template<CONCAT(Name, BenchmarkParameters)>(                \
+              #Name, "", CONCAT(CONCAT(Name, _benchmark_template_parameters), __LINE__));          \
+    }                                                                                              \
+  } CONCAT(Name, CONCAT(_instantiation_struct_instance_, __LINE__));                               \
+  }                                                                                                \
+  }                                                                                                \
+                                                                                                   \
+  /* now actually defined to allow BENCHMARK("name") { ... } syntax */                             \
+  template <class T>                                                                               \
+  void detail::CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__))<T>::CONCAT(          \
+      Name, CONCAT(_registered_fun_, __LINE__))(                                                   \
+      [[maybe_unused]] std::chrono::steady_clock::time_point & __benchmark_start_timestamp,        \
+      [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &                      \
+          __benchmark_teardown_timestamp,                                                          \
+      [[maybe_unused]] void *__benchmark_parameters)
 
+#define BENCHMARK_WITH_PARAMETERS(Name, ...)                                                       \
+  typedef std::tuple<__VA_ARGS__> CONCAT(Name, BenchmarkParameters);                               \
+  namespace detail {                                                                               \
+  /* forward declare the benchmark function that we define later */                                \
+  template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
+  struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
+    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+        std::chrono::steady_clock::time_point &,                                                   \
+        std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
+  };                                                                                               \
+                                                                                                   \
+  namespace /* ensure internal linkage for struct */                                               \
+  {                                                                                                \
+  /* helper struct for static registration in ctor */                                              \
+  struct CONCAT(Name, CONCAT(_register_struct_, __LINE__)) {                                       \
+    CONCAT(Name, CONCAT(_register_struct_, __LINE__))() { /* called once before main */            \
+      criterion::benchmark_template_registration_helper_struct::register_benchmark_template(       \
+          criterion::benchmark_config{                                                             \
+              .name = #Name,                                                                       \
+              .fn = CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) <               \
+                    CONCAT(Name, BenchmarkParameters) >                                            \
+                    ::CONCAT(Name, CONCAT(_registered_fun_, __LINE__))});                          \
+    }                                                                                              \
+  } CONCAT(Name, CONCAT(_register_struct_instance_, __LINE__));                                    \
+  }                                                                                                \
+  }                                                                                                \
+                                                                                                   \
+  /* now actually defined to allow BENCHMARK("name") { ... } syntax */                             \
+  template <class T>                                                                               \
+  void detail::CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__))<T>::CONCAT(          \
+      Name, CONCAT(_registered_fun_, __LINE__))(                                                   \
+      [[maybe_unused]] std::chrono::steady_clock::time_point & __benchmark_start_timestamp,        \
+      [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &                      \
+          __benchmark_teardown_timestamp,                                                          \
+      [[maybe_unused]] void *__benchmark_parameters)
 
-#define BENCHMARK_WITH_PARAMETERS(Name, ...) \
-  typedef std::tuple<__VA_ARGS__> CONCAT(Name, BenchmarkParameters); \
-  namespace detail {                                                           \
-  /* forward declare the benchmark function that we define later */            \
-  template <class T = CONCAT(Name, BenchmarkParameters)> \
-  struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                    \
-    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                            \
-        std::chrono::steady_clock::time_point &,                               \
-        std::optional<std::chrono::steady_clock::time_point> &, \
-        void *);       \
-  };                                                                           \
-                                                                               \
-  namespace /* ensure internal linkage for struct */                           \
-  {                                                                            \
-  /* helper struct for static registration in ctor */                          \
-  struct CONCAT(Name, CONCAT(_register_struct_, __LINE__)) {                                 \
-    CONCAT(Name, CONCAT(_register_struct_, __LINE__))() { /* called once before main */      \
-      criterion::benchmark_template_registration_helper_struct::register_benchmark_template(criterion::benchmark_config{                            \
-          .name = #Name,                                                        \
-          .fn = CONCAT(Name, CONCAT(__benchmark_function_wrapper__,                         \
-                       __LINE__))<CONCAT(Name, BenchmarkParameters)>::CONCAT(Name, CONCAT(_registered_fun_, __LINE__))});        \
-    }                                                                          \
-  } CONCAT(Name, CONCAT(_register_struct_instance_, __LINE__));                              \
-  }                                                                            \
-  }                                                                            \
-                                                                               \
-  /* now actually defined to allow BENCHMARK("name") { ... } syntax */         \
-  template <class T> \
-  void detail::CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__))<T>::CONCAT(Name, CONCAT(       \
-      _registered_fun_, __LINE__))(                                             \
-      [[maybe_unused]] std::chrono::steady_clock::time_point &                 \
-          __benchmark_start_timestamp,                                         \
-      [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &  \
-          __benchmark_teardown_timestamp, \
-      [[maybe_unused]] void * __benchmark_parameters)
+#define GET_ARGUMENT_TUPLE *((T *)__benchmark_parameters)
 
-#define GET_ARGUMENT_TUPLE \
-  *((T *)__benchmark_parameters)
+#define GET_ARGUMENT(index) std::get<index>(*((T *)__benchmark_parameters));
 
-#define GET_ARGUMENT(index) \
-  std::get<index>(*((T *)__benchmark_parameters));
-
-#define BENCHMARK_1(Name) \
-  BENCHMARK_WITHOUT_PARAMETERS(Name)
+#define BENCHMARK_1(Name) BENCHMARK_WITHOUT_PARAMETERS(Name)
 
 #define BENCHMARK_2(Name, A) BENCHMARK_WITH_PARAMETERS(Name, A)
 #define BENCHMARK_3(Name, A, B) BENCHMARK_WITH_PARAMETERS(Name, A, B)
@@ -5281,140 +5063,160 @@ struct benchmark_template_registration_helper_struct {
 #define BENCHMARK_6(Name, A, B, C, D, E) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F)
 #define BENCHMARK_7(Name, A, B, C, D, E, F) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F)
 #define BENCHMARK_8(Name, A, B, C, D, E, F, G) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G)
-#define BENCHMARK_9(Name, A, B, C, D, E, F, G, H) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H)
-#define BENCHMARK_10(Name, A, B, C, D, E, F, G, H, I) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I)
-#define BENCHMARK_11(Name, A, B, C, D, E, F, G, H, I, J) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J)
-#define BENCHMARK_12(Name, A, B, C, D, E, F, G, H, I, J, K) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K)
-#define BENCHMARK_13(Name, A, B, C, D, E, F, G, H, I, J, K, L) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L)
-#define BENCHMARK_14(Name, A, B, C, D, E, F, G, H, I, J, K, L, M) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M)
-#define BENCHMARK_15(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N)
-#define BENCHMARK_16(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)
-#define BENCHMARK_17(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)
-#define BENCHMARK_18(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q)
-#define BENCHMARK_19(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R)
-#define BENCHMARK_20(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S)
-#define BENCHMARK_21(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T)
-#define BENCHMARK_22(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U)
-#define BENCHMARK_23(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V)
-#define BENCHMARK_24(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W)
-#define BENCHMARK_25(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X)
-#define BENCHMARK_26(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y)
-#define BENCHMARK_27(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z)
+#define BENCHMARK_9(Name, A, B, C, D, E, F, G, H)                                                  \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H)
+#define BENCHMARK_10(Name, A, B, C, D, E, F, G, H, I)                                              \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I)
+#define BENCHMARK_11(Name, A, B, C, D, E, F, G, H, I, J)                                           \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J)
+#define BENCHMARK_12(Name, A, B, C, D, E, F, G, H, I, J, K)                                        \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K)
+#define BENCHMARK_13(Name, A, B, C, D, E, F, G, H, I, J, K, L)                                     \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L)
+#define BENCHMARK_14(Name, A, B, C, D, E, F, G, H, I, J, K, L, M)                                  \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M)
+#define BENCHMARK_15(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N)                               \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N)
+#define BENCHMARK_16(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)                            \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)
+#define BENCHMARK_17(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)                         \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)
+#define BENCHMARK_18(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q)                      \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q)
+#define BENCHMARK_19(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R)                   \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R)
+#define BENCHMARK_20(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S)                \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S)
+#define BENCHMARK_21(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T)             \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T)
+#define BENCHMARK_22(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U)          \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U)
+#define BENCHMARK_23(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V)       \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V)
+#define BENCHMARK_24(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W)    \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U,   \
+                            V, W)
+#define BENCHMARK_25(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X) \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U,   \
+                            V, W, X)
+#define BENCHMARK_26(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, \
+                     Y)                                                                            \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U,   \
+                            V, W, X, Y)
+#define BENCHMARK_27(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, \
+                     Y, Z)                                                                         \
+  BENCHMARK_WITH_PARAMETERS(Name, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U,   \
+                            V, W, X, Y, Z)
 
 // The interim macro that simply strips the excess and ends up with the required macro
-#define BENCHMARK_X(Name,x,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,FUNC, ...) FUNC
+#define BENCHMARK_X(Name, x, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W,  \
+                    X, Y, Z, FUNC, ...)                                                            \
+  FUNC
 
 // BENCHMARK macro supports no more than 26 parameters
-// The macro that the programmer uses 
-#define BENCHMARK(...) \
-  BENCHMARK_X(,##__VA_ARGS__,\
-    BENCHMARK_27(__VA_ARGS__),\
-    BENCHMARK_26(__VA_ARGS__),\
-    BENCHMARK_25(__VA_ARGS__),\
-    BENCHMARK_24(__VA_ARGS__),\
-    BENCHMARK_23(__VA_ARGS__),\
-    BENCHMARK_22(__VA_ARGS__),\
-    BENCHMARK_21(__VA_ARGS__),\
-    BENCHMARK_20(__VA_ARGS__),\
-    BENCHMARK_19(__VA_ARGS__),\
-    BENCHMARK_18(__VA_ARGS__),\
-    BENCHMARK_17(__VA_ARGS__),\
-    BENCHMARK_16(__VA_ARGS__),\
-    BENCHMARK_15(__VA_ARGS__),\
-    BENCHMARK_14(__VA_ARGS__),\
-    BENCHMARK_13(__VA_ARGS__),\
-    BENCHMARK_12(__VA_ARGS__),\
-    BENCHMARK_11(__VA_ARGS__),\
-    BENCHMARK_10(__VA_ARGS__),\
-    BENCHMARK_9(__VA_ARGS__),\
-    BENCHMARK_8(__VA_ARGS__),\
-    BENCHMARK_7(__VA_ARGS__),\
-    BENCHMARK_6(__VA_ARGS__),\
-    BENCHMARK_5(__VA_ARGS__),\
-    BENCHMARK_4(__VA_ARGS__),\
-    BENCHMARK_3(__VA_ARGS__),\
-    BENCHMARK_2(__VA_ARGS__),\
-    BENCHMARK_1(__VA_ARGS__) \
-    )
+// The macro that the programmer uses
+#define BENCHMARK(...)                                                                             \
+  BENCHMARK_X(, ##__VA_ARGS__, BENCHMARK_27(__VA_ARGS__), BENCHMARK_26(__VA_ARGS__),               \
+              BENCHMARK_25(__VA_ARGS__), BENCHMARK_24(__VA_ARGS__), BENCHMARK_23(__VA_ARGS__),     \
+              BENCHMARK_22(__VA_ARGS__), BENCHMARK_21(__VA_ARGS__), BENCHMARK_20(__VA_ARGS__),     \
+              BENCHMARK_19(__VA_ARGS__), BENCHMARK_18(__VA_ARGS__), BENCHMARK_17(__VA_ARGS__),     \
+              BENCHMARK_16(__VA_ARGS__), BENCHMARK_15(__VA_ARGS__), BENCHMARK_14(__VA_ARGS__),     \
+              BENCHMARK_13(__VA_ARGS__), BENCHMARK_12(__VA_ARGS__), BENCHMARK_11(__VA_ARGS__),     \
+              BENCHMARK_10(__VA_ARGS__), BENCHMARK_9(__VA_ARGS__), BENCHMARK_8(__VA_ARGS__),       \
+              BENCHMARK_7(__VA_ARGS__), BENCHMARK_6(__VA_ARGS__), BENCHMARK_5(__VA_ARGS__),        \
+              BENCHMARK_4(__VA_ARGS__), BENCHMARK_3(__VA_ARGS__), BENCHMARK_2(__VA_ARGS__),        \
+              BENCHMARK_1(__VA_ARGS__))
 
-#define REGISTER_BENCHMARK(TemplateName, InstanceName, ...) \
-  \
-  namespace /* ensure internal linkage for struct */                           \
-  {                                                                            \
-  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = {__VA_ARGS__}; \
-  /* helper struct for static registration in ctor */                          \
-  struct CONCAT(TemplateName, CONCAT(_instantiation_struct_, __LINE__)) {                                 \
-    CONCAT(TemplateName, CONCAT(_instantiation_struct_, __LINE__))() { /* called once before main */      \
-      criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
-    }                                                                          \
-  } CONCAT(TemplateName, CONCAT(_instantiation_struct_instance_, __LINE__));                              \
+#define REGISTER_BENCHMARK(TemplateName, InstanceName, ...)                                        \
+                                                                                                   \
+  namespace /* ensure internal linkage for struct */                                               \
+  {                                                                                                \
+  static CONCAT(TemplateName, BenchmarkParameters)                                                 \
+      CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = {__VA_ARGS__};      \
+  /* helper struct for static registration in ctor */                                              \
+  struct CONCAT(TemplateName, CONCAT(_instantiation_struct_, __LINE__)) {                          \
+    CONCAT(TemplateName, CONCAT(_instantiation_struct_, __LINE__))                                 \
+    () { /* called once before main */                                                             \
+      criterion::benchmark_template_registration_helper_struct::                                   \
+          execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(        \
+              #TemplateName, InstanceName,                                                         \
+              CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__));             \
+    }                                                                                              \
+  } CONCAT(TemplateName, CONCAT(_instantiation_struct_instance_, __LINE__));                       \
   }
 
 #define GET_FIRST(first, ...) first
 #define GET_REST(first, ...) __VA_ARGS__
 
-#define REGISTER_BENCHMARK_N(TemplateName, Index, PackedArgument) \
-  \
-  namespace /* ensure internal linkage for struct */                           \
-  {                                                                            \
-  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__), Index) = {GET_REST(PackedArgument)}; \
-  /* helper struct for static registration in ctor */                          \
-  struct CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)) {                                 \
-    CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)()) { /* called once before main */      \
-      criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, GET_FIRST(PackedArgument), CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__), Index)); \
-    }                                                                          \
-  } CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_instance_, __LINE__), Index));                              \
+#define REGISTER_BENCHMARK_N(TemplateName, Index, PackedArgument)                                  \
+                                                                                                   \
+  namespace /* ensure internal linkage for struct */                                               \
+  {                                                                                                \
+  static CONCAT(TemplateName, BenchmarkParameters)                                                 \
+      CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__),               \
+             Index) = {GET_REST(PackedArgument)};                                                  \
+  /* helper struct for static registration in ctor */                                              \
+  struct CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)) {           \
+    CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_, __LINE__),                          \
+                                Index)()) { /* called once before main */                          \
+      criterion::benchmark_template_registration_helper_struct::                                   \
+          execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(        \
+              #TemplateName, GET_FIRST(PackedArgument),                                            \
+              CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__),       \
+                     Index));                                                                      \
+    }                                                                                              \
+  } CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_instance_, __LINE__), Index));        \
   }
-
 
 #define _Args(...) __VA_ARGS__
 #define STRIP_PARENS(X) X
-#define PASS_PARAMETERS(X) STRIP_PARENS( _Args X )
+#define PASS_PARAMETERS(X) STRIP_PARENS(_Args X)
 
-#define STRINGIZE(arg)  STRINGIZE1(arg)
+#define STRINGIZE(arg) STRINGIZE1(arg)
 #define STRINGIZE1(arg) STRINGIZE2(arg)
 #define STRINGIZE2(arg) #arg
 
-#define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
-#define CONCATENATE1(arg1, arg2)  CONCATENATE2(arg1, arg2)
-#define CONCATENATE2(arg1, arg2)  arg1##arg2
+#define CONCATENATE(arg1, arg2) CONCATENATE1(arg1, arg2)
+#define CONCATENATE1(arg1, arg2) CONCATENATE2(arg1, arg2)
+#define CONCATENATE2(arg1, arg2) arg1##arg2
 
 #define FOR_EACH_1(what, first, x, ...) what(1, first, x)
-#define FOR_EACH_2(what, first, x, ...)\
-  what(2, first, x);\
+#define FOR_EACH_2(what, first, x, ...)                                                            \
+  what(2, first, x);                                                                               \
   FOR_EACH_1(what, first, __VA_ARGS__);
-#define FOR_EACH_3(what, first, x, ...)\
-  what(3, first, x);\
+#define FOR_EACH_3(what, first, x, ...)                                                            \
+  what(3, first, x);                                                                               \
   FOR_EACH_2(what, first, __VA_ARGS__);
-#define FOR_EACH_4(what, first, x, ...)\
-  what(4, first, x);\
+#define FOR_EACH_4(what, first, x, ...)                                                            \
+  what(4, first, x);                                                                               \
   FOR_EACH_3(what, first, __VA_ARGS__);
-#define FOR_EACH_5(what, first, x, ...)\
-  what(5, first, x);\
- FOR_EACH_4(what, first, __VA_ARGS__);
-#define FOR_EACH_6(what, first, x, ...)\
-  what(6, first, x);\
+#define FOR_EACH_5(what, first, x, ...)                                                            \
+  what(5, first, x);                                                                               \
+  FOR_EACH_4(what, first, __VA_ARGS__);
+#define FOR_EACH_6(what, first, x, ...)                                                            \
+  what(6, first, x);                                                                               \
   FOR_EACH_5(what, first, __VA_ARGS__);
-#define FOR_EACH_7(what, first, x, ...)\
-  what(7, first, x);\
+#define FOR_EACH_7(what, first, x, ...)                                                            \
+  what(7, first, x);                                                                               \
   FOR_EACH_6(what, first, __VA_ARGS__);
-#define FOR_EACH_8(what, first, x, ...)\
-  what(8, first, x);\
+#define FOR_EACH_8(what, first, x, ...)                                                            \
+  what(8, first, x);                                                                               \
   FOR_EACH_7(what, first, __VA_ARGS__);
 
 #define FOR_EACH_NARG(...) FOR_EACH_NARG_(__VA_ARGS__, FOR_EACH_RSEQ_N())
-#define FOR_EACH_NARG_(...) FOR_EACH_ARG_N(__VA_ARGS__) 
-#define FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N 
+#define FOR_EACH_NARG_(...) FOR_EACH_ARG_N(__VA_ARGS__)
+#define FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N
 #define FOR_EACH_RSEQ_N() 8, 7, 6, 5, 4, 3, 2, 1, 0
 
 #define FOR_EACH_(N, what, first, x, ...) CONCATENATE(FOR_EACH_, N)(what, first, x, __VA_ARGS__)
-#define FOR_EACH(what, first, x, ...) FOR_EACH_(FOR_EACH_NARG(x, __VA_ARGS__), what, first, x, __VA_ARGS__)
+#define FOR_EACH(what, first, x, ...)                                                              \
+  FOR_EACH_(FOR_EACH_NARG(x, __VA_ARGS__), what, first, x, __VA_ARGS__)
 
-#define REGISTER_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...) \
+#define REGISTER_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                               \
   REGISTER_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
 
-#define REGISTER_BENCHMARK_FOR_EACH(TemplateName, ...) \
-  FOR_EACH(REGISTER_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)#pragma once
+#define REGISTER_BENCHMARK_FOR_EACH(TemplateName, ...)                                             \
+  FOR_EACH(REGISTER_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__) #pragma once
 // #include <criterion/details/indicators.hpp>
 // #include <criterion/details/macros.hpp>
 
@@ -5424,14 +5226,14 @@ static inline void signal_handler(int signal) {
   exit(signal);
 }
 
-#define CRITERION_BENCHMARK_MAIN                                                         \
-  int main() {                                                                 \
-    std::signal(SIGTERM, signal_handler);                                      \
-    std::signal(SIGSEGV, signal_handler);                                      \
-    std::signal(SIGINT, signal_handler);                                       \
-    std::signal(SIGILL, signal_handler);                                       \
-    std::signal(SIGABRT, signal_handler);                                      \
-    std::signal(SIGFPE, signal_handler);                                       \
-    criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();                                           \
-    criterion::csv_writer::write_results("results.csv", criterion::benchmark::results); \
+#define CRITERION_BENCHMARK_MAIN                                                                   \
+  int main() {                                                                                     \
+    std::signal(SIGTERM, signal_handler);                                                          \
+    std::signal(SIGSEGV, signal_handler);                                                          \
+    std::signal(SIGINT, signal_handler);                                                           \
+    std::signal(SIGILL, signal_handler);                                                           \
+    std::signal(SIGABRT, signal_handler);                                                          \
+    std::signal(SIGFPE, signal_handler);                                                           \
+    criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();              \
+    criterion::csv_writer::write_results("results.csv", criterion::benchmark::results);            \
   }

@@ -34,622 +34,482 @@ enum class ProgressType { incremental, decremental };
 // defines the appropriate macro that is used to wrap some
 // platform specific things
 #if defined(_WIN32) || defined(_WIN64)
-#   define TERMCOLOR_OS_WINDOWS
+#define TERMCOLOR_OS_WINDOWS
 #elif defined(__APPLE__)
-#   define TERMCOLOR_OS_MACOS
+#define TERMCOLOR_OS_MACOS
 #elif defined(__unix__) || defined(__unix)
-#   define TERMCOLOR_OS_LINUX
+#define TERMCOLOR_OS_LINUX
 #else
-#   error unsupported platform
+#error unsupported platform
 #endif
-
 
 // This headers provides the `isatty()`/`fileno()` functions,
 // which are used for testing whether a standart stream refers
 // to the terminal. As for Windows, we also need WinApi funcs
 // for changing colors attributes of the terminal.
 #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-#   include <unistd.h>
+#include <unistd.h>
 #elif defined(TERMCOLOR_OS_WINDOWS)
 #if defined(_MSC_VER)
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#   include <io.h>
-#   include <windows.h>
+#include <io.h>
+#include <windows.h>
 #endif
 #endif
 
-
-#include <iostream>
 #include <cstdio>
+#include <iostream>
 
+namespace termcolor {
+// Forward declaration of the `_internal` namespace.
+// All comments are below.
+namespace _internal {
+// An index to be used to access a private storage of I/O streams. See
+// colorize / nocolorize I/O manipulators for details.
+static int colorize_index = std::ios_base::xalloc();
 
-namespace termcolor
-{
-    // Forward declaration of the `_internal` namespace.
-    // All comments are below.
-    namespace _internal
-    {
-        // An index to be used to access a private storage of I/O streams. See
-        // colorize / nocolorize I/O manipulators for details.
-        static int colorize_index = std::ios_base::xalloc();
+inline FILE *get_standard_stream(const std::ostream &stream);
+inline bool is_colorized(std::ostream &stream);
+inline bool is_atty(const std::ostream &stream);
 
-        inline FILE* get_standard_stream(const std::ostream& stream);
-        inline bool is_colorized(std::ostream& stream);
-        inline bool is_atty(const std::ostream& stream);
+#if defined(TERMCOLOR_OS_WINDOWS)
+inline void win_change_attributes(std::ostream &stream, int foreground, int background = -1);
+#endif
+} // namespace _internal
 
-    #if defined(TERMCOLOR_OS_WINDOWS)
-        inline void win_change_attributes(std::ostream& stream, int foreground, int background=-1);
-    #endif
-    }
+inline std::ostream &colorize(std::ostream &stream) {
+  stream.iword(_internal::colorize_index) = 1L;
+  return stream;
+}
 
-    inline
-    std::ostream& colorize(std::ostream& stream)
-    {
-        stream.iword(_internal::colorize_index) = 1L;
-        return stream;
-    }
+inline std::ostream &nocolorize(std::ostream &stream) {
+  stream.iword(_internal::colorize_index) = 0L;
+  return stream;
+}
 
-    inline
-    std::ostream& nocolorize(std::ostream& stream)
-    {
-        stream.iword(_internal::colorize_index) = 0L;
-        return stream;
-    }
+inline std::ostream &reset(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[00m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, -1);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& reset(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[00m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1, -1);
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &bold(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[1m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& bold(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[1m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &dark(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[2m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& dark(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[2m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &italic(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[3m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& italic(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[3m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &underline(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[4m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& underline(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[4m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &blink(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[5m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& blink(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[5m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &reverse(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[7m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& reverse(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[7m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &concealed(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[8m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& concealed(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[8m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &crossed(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[9m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& crossed(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[9m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t code> inline std::ostream &color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[12];
+    std::snprintf(command, sizeof(command), "\033[38;5;%dm", code);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t code> inline
-    std::ostream& color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[12];
-            std::snprintf(command, sizeof(command), "\033[38;5;%dm", code);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t code> inline std::ostream &on_color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[12];
+    std::snprintf(command, sizeof(command), "\033[48;5;%dm", code);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t code> inline
-    std::ostream& on_color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[12];
-            std::snprintf(command, sizeof(command), "\033[48;5;%dm", code);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t r, uint8_t g, uint8_t b> inline std::ostream &color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[20];
+    std::snprintf(command, sizeof(command), "\033[38;2;%d;%d;%dm", r, g, b);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t r, uint8_t g, uint8_t b> inline
-    std::ostream& color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[20];
-            std::snprintf(command, sizeof(command), "\033[38;2;%d;%d;%dm", r, g, b);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+template <uint8_t r, uint8_t g, uint8_t b> inline std::ostream &on_color(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    char command[20];
+    std::snprintf(command, sizeof(command), "\033[48;2;%d;%d;%dm", r, g, b);
+    stream << command;
+#elif defined(TERMCOLOR_OS_WINDOWS)
+#endif
+  }
+  return stream;
+}
 
-    template <uint8_t r, uint8_t g, uint8_t b> inline
-    std::ostream& on_color(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            char command[20];
-            std::snprintf(command, sizeof(command), "\033[48;2;%d;%d;%dm", r, g, b);
-            stream << command;
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &grey(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[30m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream,
+                                     0 // grey (black)
+    );
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& grey(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[30m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                0   // grey (black)
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &red(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[31m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& red(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[31m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &green(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[32m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_GREEN);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& green(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[32m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_GREEN
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &yellow(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[33m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_GREEN | FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& yellow(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[33m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_GREEN | FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &blue(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[34m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& blue(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[34m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &magenta(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[35m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE | FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& magenta(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[35m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE | FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &cyan(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[36m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE | FOREGROUND_GREEN);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& cyan(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[36m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE | FOREGROUND_GREEN
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &white(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[37m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& white(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[37m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream,
-                FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_grey(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[40m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1,
+                                     0 // grey (black)
+    );
+#endif
+  }
+  return stream;
+}
 
+inline std::ostream &on_red(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[41m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
+inline std::ostream &on_green(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[42m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_GREEN);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_grey(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[40m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                0   // grey (black)
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_yellow(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[43m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_GREEN | BACKGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_red(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[41m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_blue(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[44m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_BLUE);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_green(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[42m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_magenta(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[45m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_BLUE | BACKGROUND_RED);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_yellow(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[43m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN | BACKGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_cyan(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[46m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1, BACKGROUND_GREEN | BACKGROUND_BLUE);
+#endif
+  }
+  return stream;
+}
 
-    inline
-    std::ostream& on_blue(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[44m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_BLUE
-            );
-        #endif
-        }
-        return stream;
-    }
+inline std::ostream &on_white(std::ostream &stream) {
+  if (_internal::is_colorized(stream)) {
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+    stream << "\033[47m";
+#elif defined(TERMCOLOR_OS_WINDOWS)
+    _internal::win_change_attributes(stream, -1,
+                                     BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_RED);
+#endif
+  }
 
-    inline
-    std::ostream& on_magenta(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[45m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_BLUE | BACKGROUND_RED
-            );
-        #endif
-        }
-        return stream;
-    }
+  return stream;
+}
 
-    inline
-    std::ostream& on_cyan(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[46m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN | BACKGROUND_BLUE
-            );
-        #endif
-        }
-        return stream;
-    }
+//! Since C++ hasn't a way to hide something in the header from
+//! the outer access, I have to introduce this namespace which
+//! is used for internal purpose and should't be access from
+//! the user code.
+namespace _internal {
+//! Since C++ hasn't a true way to extract stream handler
+//! from the a given `std::ostream` object, I have to write
+//! this kind of hack.
+inline FILE *get_standard_stream(const std::ostream &stream) {
+  if (&stream == &std::cout)
+    return stdout;
+  else if ((&stream == &std::cerr) || (&stream == &std::clog))
+    return stderr;
 
-    inline
-    std::ostream& on_white(std::ostream& stream)
-    {
-        if (_internal::is_colorized(stream))
-        {
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            stream << "\033[47m";
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            _internal::win_change_attributes(stream, -1,
-                BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_RED
-            );
-        #endif
-        }
+  return nullptr;
+}
 
-        return stream;
-    }
+// Say whether a given stream should be colorized or not. It's always
+// true for ATTY streams and may be true for streams marked with
+// colorize flag.
+inline bool is_colorized(std::ostream &stream) {
+  return is_atty(stream) || static_cast<bool>(stream.iword(colorize_index));
+}
 
+//! Test whether a given `std::ostream` object refers to
+//! a terminal.
+inline bool is_atty(const std::ostream &stream) {
+  FILE *std_stream = get_standard_stream(stream);
 
+  // Unfortunately, fileno() ends with segmentation fault
+  // if invalid file descriptor is passed. So we need to
+  // handle this case gracefully and assume it's not a tty
+  // if standard stream is not detected, and 0 is returned.
+  if (!std_stream)
+    return false;
 
-    //! Since C++ hasn't a way to hide something in the header from
-    //! the outer access, I have to introduce this namespace which
-    //! is used for internal purpose and should't be access from
-    //! the user code.
-    namespace _internal
-    {
-        //! Since C++ hasn't a true way to extract stream handler
-        //! from the a given `std::ostream` object, I have to write
-        //! this kind of hack.
-        inline
-        FILE* get_standard_stream(const std::ostream& stream)
-        {
-            if (&stream == &std::cout)
-                return stdout;
-            else if ((&stream == &std::cerr) || (&stream == &std::clog))
-                return stderr;
+#if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+  return ::isatty(fileno(std_stream));
+#elif defined(TERMCOLOR_OS_WINDOWS)
+  return ::_isatty(_fileno(std_stream));
+#endif
+}
 
-            return nullptr;
-        }
+#if defined(TERMCOLOR_OS_WINDOWS)
+//! Change Windows Terminal colors attribute. If some
+//! parameter is `-1` then attribute won't changed.
+inline void win_change_attributes(std::ostream &stream, int foreground, int background) {
+  // yeah, i know.. it's ugly, it's windows.
+  static WORD defaultAttributes = 0;
 
-        // Say whether a given stream should be colorized or not. It's always
-        // true for ATTY streams and may be true for streams marked with
-        // colorize flag.
-        inline
-        bool is_colorized(std::ostream& stream)
-        {
-            return is_atty(stream) || static_cast<bool>(stream.iword(colorize_index));
-        }
+  // Windows doesn't have ANSI escape sequences and so we use special
+  // API to change Terminal output color. That means we can't
+  // manipulate colors by means of "std::stringstream" and hence
+  // should do nothing in this case.
+  if (!_internal::is_atty(stream))
+    return;
 
-        //! Test whether a given `std::ostream` object refers to
-        //! a terminal.
-        inline
-        bool is_atty(const std::ostream& stream)
-        {
-            FILE* std_stream = get_standard_stream(stream);
+  // get terminal handle
+  HANDLE hTerminal = INVALID_HANDLE_VALUE;
+  if (&stream == &std::cout)
+    hTerminal = GetStdHandle(STD_OUTPUT_HANDLE);
+  else if (&stream == &std::cerr)
+    hTerminal = GetStdHandle(STD_ERROR_HANDLE);
 
-            // Unfortunately, fileno() ends with segmentation fault
-            // if invalid file descriptor is passed. So we need to
-            // handle this case gracefully and assume it's not a tty
-            // if standard stream is not detected, and 0 is returned.
-            if (!std_stream)
-                return false;
+  // save default terminal attributes if it unsaved
+  if (!defaultAttributes) {
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (!GetConsoleScreenBufferInfo(hTerminal, &info))
+      return;
+    defaultAttributes = info.wAttributes;
+  }
 
-        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
-            return ::isatty(fileno(std_stream));
-        #elif defined(TERMCOLOR_OS_WINDOWS)
-            return ::_isatty(_fileno(std_stream));
-        #endif
-        }
+  // restore all default settings
+  if (foreground == -1 && background == -1) {
+    SetConsoleTextAttribute(hTerminal, defaultAttributes);
+    return;
+  }
 
-    #if defined(TERMCOLOR_OS_WINDOWS)
-        //! Change Windows Terminal colors attribute. If some
-        //! parameter is `-1` then attribute won't changed.
-        inline void win_change_attributes(std::ostream& stream, int foreground, int background)
-        {
-            // yeah, i know.. it's ugly, it's windows.
-            static WORD defaultAttributes = 0;
+  // get current settings
+  CONSOLE_SCREEN_BUFFER_INFO info;
+  if (!GetConsoleScreenBufferInfo(hTerminal, &info))
+    return;
 
-            // Windows doesn't have ANSI escape sequences and so we use special
-            // API to change Terminal output color. That means we can't
-            // manipulate colors by means of "std::stringstream" and hence
-            // should do nothing in this case.
-            if (!_internal::is_atty(stream))
-                return;
+  if (foreground != -1) {
+    info.wAttributes &= ~(info.wAttributes & 0x0F);
+    info.wAttributes |= static_cast<WORD>(foreground);
+  }
 
-            // get terminal handle
-            HANDLE hTerminal = INVALID_HANDLE_VALUE;
-            if (&stream == &std::cout)
-                hTerminal = GetStdHandle(STD_OUTPUT_HANDLE);
-            else if (&stream == &std::cerr)
-                hTerminal = GetStdHandle(STD_ERROR_HANDLE);
+  if (background != -1) {
+    info.wAttributes &= ~(info.wAttributes & 0xF0);
+    info.wAttributes |= static_cast<WORD>(background);
+  }
 
-            // save default terminal attributes if it unsaved
-            if (!defaultAttributes)
-            {
-                CONSOLE_SCREEN_BUFFER_INFO info;
-                if (!GetConsoleScreenBufferInfo(hTerminal, &info))
-                    return;
-                defaultAttributes = info.wAttributes;
-            }
+  SetConsoleTextAttribute(hTerminal, info.wAttributes);
+}
+#endif // TERMCOLOR_OS_WINDOWS
 
-            // restore all default settings
-            if (foreground == -1 && background == -1)
-            {
-                SetConsoleTextAttribute(hTerminal, defaultAttributes);
-                return;
-            }
-
-            // get current settings
-            CONSOLE_SCREEN_BUFFER_INFO info;
-            if (!GetConsoleScreenBufferInfo(hTerminal, &info))
-                return;
-
-            if (foreground != -1)
-            {
-                info.wAttributes &= ~(info.wAttributes & 0x0F);
-                info.wAttributes |= static_cast<WORD>(foreground);
-            }
-
-            if (background != -1)
-            {
-                info.wAttributes &= ~(info.wAttributes & 0xF0);
-                info.wAttributes |= static_cast<WORD>(background);
-            }
-
-            SetConsoleTextAttribute(hTerminal, info.wAttributes);
-        }
-    #endif // TERMCOLOR_OS_WINDOWS
-
-    } // namespace _internal
+} // namespace _internal
 
 } // namespace termcolor
-
 
 #undef TERMCOLOR_OS_WINDOWS
 #undef TERMCOLOR_OS_MACOS
@@ -659,7 +519,6 @@ namespace termcolor
 
 #pragma once
 #include <utility>
-
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -697,7 +556,6 @@ static inline size_t terminal_width() { return terminal_size().second; }
 } // namespace indicators
 
 #endif
-
 
 /*
 Activity Indicators for Modern C++
@@ -1304,13 +1162,9 @@ static inline int display_width(const std::wstring &input) {
 
 #else
 
-static inline int display_width(const std::string &input) {
-  return input.length();
-}
+static inline int display_width(const std::string &input) { return input.length(); }
 
-static inline int display_width(const std::wstring &input) {
-  return input.length();
-}
+static inline int display_width(const std::wstring &input) { return input.length(); }
 
 #endif
 
@@ -1545,8 +1399,8 @@ private:
 // #include <indicators/terminal_size.hpp>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <tuple>
@@ -1557,45 +1411,42 @@ namespace indicators {
 
 class ProgressBar {
   using Settings =
-      std::tuple<option::BarWidth, option::PrefixText, option::PostfixText,
-                 option::Start, option::End, option::Fill, option::Lead,
-                 option::Remainder, option::MaxPostfixTextLen,
-                 option::Completed, option::ShowPercentage,
-                 option::ShowElapsedTime, option::ShowRemainingTime,
-                 option::SavedStartTime, option::ForegroundColor,
-                 option::FontStyles, option::MinProgress, option::MaxProgress,
-                 option::ProgressType, option::Stream>;
+      std::tuple<option::BarWidth, option::PrefixText, option::PostfixText, option::Start,
+                 option::End, option::Fill, option::Lead, option::Remainder,
+                 option::MaxPostfixTextLen, option::Completed, option::ShowPercentage,
+                 option::ShowElapsedTime, option::ShowRemainingTime, option::SavedStartTime,
+                 option::ForegroundColor, option::FontStyles, option::MinProgress,
+                 option::MaxProgress, option::ProgressType, option::Stream>;
 
 public:
   template <typename... Args,
-            typename std::enable_if<
-                details::are_settings_from_tuple<
-                    Settings, typename std::decay<Args>::type...>::value,
-                void *>::type = nullptr>
+            typename std::enable_if<details::are_settings_from_tuple<
+                                        Settings, typename std::decay<Args>::type...>::value,
+                                    void *>::type = nullptr>
   explicit ProgressBar(Args &&... args)
       : settings_(
-            details::get<details::ProgressBarOption::bar_width>(
-                option::BarWidth{100}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::prefix_text>(
-                option::PrefixText{}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::postfix_text>(
-                option::PostfixText{}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::start>(
-                option::Start{"["}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::end>(
-                option::End{"]"}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::fill>(
-                option::Fill{"="}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::lead>(
-                option::Lead{">"}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::remainder>(
-                option::Remainder{" "}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::bar_width>(option::BarWidth{100},
+                                                                std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::prefix_text>(option::PrefixText{},
+                                                                  std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::postfix_text>(option::PostfixText{},
+                                                                   std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::start>(option::Start{"["},
+                                                            std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::end>(option::End{"]"},
+                                                          std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::fill>(option::Fill{"="},
+                                                           std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::lead>(option::Lead{">"},
+                                                           std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::remainder>(option::Remainder{" "},
+                                                                std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::max_postfix_text_len>(
                 option::MaxPostfixTextLen{0}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::completed>(
-                option::Completed{false}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::show_percentage>(
-                option::ShowPercentage{false}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::completed>(option::Completed{false},
+                                                                std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::show_percentage>(option::ShowPercentage{false},
+                                                                      std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::show_elapsed_time>(
                 option::ShowElapsedTime{false}, std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::show_remaining_time>(
@@ -1603,20 +1454,17 @@ public:
             details::get<details::ProgressBarOption::saved_start_time>(
                 option::SavedStartTime{false}, std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::foreground_color>(
-                option::ForegroundColor{Color::unspecified},
-                std::forward<Args>(args)...),
+                option::ForegroundColor{Color::unspecified}, std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::font_styles>(
-                option::FontStyles{std::vector<FontStyle>{}},
-                std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::min_progress>(
-                option::MinProgress{0}, std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::max_progress>(
-                option::MaxProgress{100}, std::forward<Args>(args)...),
+                option::FontStyles{std::vector<FontStyle>{}}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::min_progress>(option::MinProgress{0},
+                                                                   std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::max_progress>(option::MaxProgress{100},
+                                                                   std::forward<Args>(args)...),
             details::get<details::ProgressBarOption::progress_type>(
-                option::ProgressType{ProgressType::incremental},
-                std::forward<Args>(args)...),
-            details::get<details::ProgressBarOption::stream>(
-                option::Stream{std::cout}, std::forward<Args>(args)...)) {
+                option::ProgressType{ProgressType::incremental}, std::forward<Args>(args)...),
+            details::get<details::ProgressBarOption::stream>(option::Stream{std::cout},
+                                                             std::forward<Args>(args)...)) {
 
     // if progress is incremental, start from min_progress
     // else start from max_progress
@@ -1629,47 +1477,38 @@ public:
 
   template <typename T, details::ProgressBarOption id>
   void set_option(details::Setting<T, id> &&setting) {
-    static_assert(
-        !std::is_same<T, typename std::decay<decltype(details::get_value<id>(
-                             std::declval<Settings>()))>::type>::value,
-        "Setting has wrong type!");
+    static_assert(!std::is_same<T, typename std::decay<decltype(details::get_value<id>(
+                                       std::declval<Settings>()))>::type>::value,
+                  "Setting has wrong type!");
     std::lock_guard<std::mutex> lock(mutex_);
     get_value<id>() = std::move(setting).value;
   }
 
   template <typename T, details::ProgressBarOption id>
   void set_option(const details::Setting<T, id> &setting) {
-    static_assert(
-        !std::is_same<T, typename std::decay<decltype(details::get_value<id>(
-                             std::declval<Settings>()))>::type>::value,
-        "Setting has wrong type!");
+    static_assert(!std::is_same<T, typename std::decay<decltype(details::get_value<id>(
+                                       std::declval<Settings>()))>::type>::value,
+                  "Setting has wrong type!");
     std::lock_guard<std::mutex> lock(mutex_);
     get_value<id>() = setting.value;
   }
 
-  void
-  set_option(const details::Setting<
-             std::string, details::ProgressBarOption::postfix_text> &setting) {
+  void set_option(
+      const details::Setting<std::string, details::ProgressBarOption::postfix_text> &setting) {
     std::lock_guard<std::mutex> lock(mutex_);
     get_value<details::ProgressBarOption::postfix_text>() = setting.value;
-    if (setting.value.length() >
-        get_value<details::ProgressBarOption::max_postfix_text_len>()) {
-      get_value<details::ProgressBarOption::max_postfix_text_len>() =
-          setting.value.length();
+    if (setting.value.length() > get_value<details::ProgressBarOption::max_postfix_text_len>()) {
+      get_value<details::ProgressBarOption::max_postfix_text_len>() = setting.value.length();
     }
   }
 
-  void set_option(
-      details::Setting<std::string, details::ProgressBarOption::postfix_text>
-          &&setting) {
+  void
+  set_option(details::Setting<std::string, details::ProgressBarOption::postfix_text> &&setting) {
     std::lock_guard<std::mutex> lock(mutex_);
-    get_value<details::ProgressBarOption::postfix_text>() =
-        std::move(setting).value;
+    get_value<details::ProgressBarOption::postfix_text>() = std::move(setting).value;
     auto &new_value = get_value<details::ProgressBarOption::postfix_text>();
-    if (new_value.length() >
-        get_value<details::ProgressBarOption::max_postfix_text_len>()) {
-      get_value<details::ProgressBarOption::max_postfix_text_len>() =
-          new_value.length();
+    if (new_value.length() > get_value<details::ProgressBarOption::max_postfix_text_len>()) {
+      get_value<details::ProgressBarOption::max_postfix_text_len>() = new_value.length();
     }
   }
 
@@ -1698,14 +1537,10 @@ public:
 
   size_t current() {
     std::lock_guard<std::mutex> lock{mutex_};
-    return std::min(
-        progress_,
-        size_t(get_value<details::ProgressBarOption::max_progress>()));
+    return std::min(progress_, size_t(get_value<details::ProgressBarOption::max_progress>()));
   }
 
-  bool is_completed() const {
-    return get_value<details::ProgressBarOption::completed>();
-  }
+  bool is_completed() const { return get_value<details::ProgressBarOption::completed>(); }
 
   void mark_as_completed() {
     get_value<details::ProgressBarOption::completed>() = true;
@@ -1714,14 +1549,13 @@ public:
 
 private:
   template <details::ProgressBarOption id>
-  auto get_value()
-      -> decltype((details::get_value<id>(std::declval<Settings &>()).value)) {
+  auto get_value() -> decltype((details::get_value<id>(std::declval<Settings &>()).value)) {
     return details::get_value<id>(settings_).value;
   }
 
   template <details::ProgressBarOption id>
-  auto get_value() const -> decltype(
-      (details::get_value<id>(std::declval<const Settings &>()).value)) {
+  auto get_value() const
+      -> decltype((details::get_value<id>(std::declval<const Settings &>()).value)) {
     return details::get_value<id>(settings_).value;
   }
 
@@ -1736,12 +1570,9 @@ private:
   std::atomic<bool> multi_progress_mode_{false};
 
   void save_start_time() {
-    auto &show_elapsed_time =
-        get_value<details::ProgressBarOption::show_elapsed_time>();
-    auto &saved_start_time =
-        get_value<details::ProgressBarOption::saved_start_time>();
-    auto &show_remaining_time =
-        get_value<details::ProgressBarOption::show_remaining_time>();
+    auto &show_elapsed_time = get_value<details::ProgressBarOption::show_elapsed_time>();
+    auto &saved_start_time = get_value<details::ProgressBarOption::saved_start_time>();
+    auto &show_remaining_time = get_value<details::ProgressBarOption::show_remaining_time>();
     if ((show_elapsed_time || show_remaining_time) && !saved_start_time) {
       start_time_point_ = std::chrono::high_resolution_clock::now();
       saved_start_time = true;
@@ -1758,19 +1589,16 @@ private:
 
   std::pair<std::string, size_t> get_postfix_text() {
     std::stringstream os;
-    const auto max_progress =
-        get_value<details::ProgressBarOption::max_progress>();
+    const auto max_progress = get_value<details::ProgressBarOption::max_progress>();
 
     if (get_value<details::ProgressBarOption::show_percentage>()) {
       os << " "
-         << std::min(static_cast<size_t>(static_cast<float>(progress_) /
-                                         max_progress * 100),
+         << std::min(static_cast<size_t>(static_cast<float>(progress_) / max_progress * 100),
                      size_t(100))
          << "%";
     }
 
-    auto &saved_start_time =
-        get_value<details::ProgressBarOption::saved_start_time>();
+    auto &saved_start_time = get_value<details::ProgressBarOption::saved_start_time>();
 
     if (get_value<details::ProgressBarOption::show_elapsed_time>()) {
       os << " [";
@@ -1788,8 +1616,7 @@ private:
 
       if (saved_start_time) {
         auto eta = std::chrono::nanoseconds(
-            progress_ > 0 ? static_cast<long long>(elapsed_.count() *
-                                                   max_progress / progress_)
+            progress_ > 0 ? static_cast<long long>(elapsed_.count() * max_progress / progress_)
                           : 0);
         auto remaining = eta > elapsed_ ? (eta - elapsed_) : (elapsed_ - eta);
         details::write_duration(os, remaining);
@@ -1817,10 +1644,8 @@ public:
     auto &os = get_value<details::ProgressBarOption::stream>();
 
     const auto type = get_value<details::ProgressBarOption::progress_type>();
-    const auto min_progress =
-        get_value<details::ProgressBarOption::min_progress>();
-    const auto max_progress =
-        get_value<details::ProgressBarOption::max_progress>();
+    const auto min_progress = get_value<details::ProgressBarOption::min_progress>();
+    const auto max_progress = get_value<details::ProgressBarOption::max_progress>();
     if (multi_progress_mode_ && !from_multi_progress) {
       if ((type == ProgressType::incremental && progress_ >= max_progress) ||
           (type == ProgressType::decremental && progress_ <= min_progress)) {
@@ -1830,13 +1655,10 @@ public:
     }
     auto now = std::chrono::high_resolution_clock::now();
     if (!get_value<details::ProgressBarOption::completed>())
-      elapsed_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          now - start_time_point_);
+      elapsed_ = std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time_point_);
 
-    if (get_value<details::ProgressBarOption::foreground_color>() !=
-        Color::unspecified)
-      details::set_stream_color(
-          os, get_value<details::ProgressBarOption::foreground_color>());
+    if (get_value<details::ProgressBarOption::foreground_color>() != Color::unspecified)
+      details::set_stream_color(os, get_value<details::ProgressBarOption::foreground_color>());
 
     for (auto &style : get_value<details::ProgressBarOption::font_styles>())
       details::set_font_style(os, style);
@@ -1848,11 +1670,10 @@ public:
 
     os << get_value<details::ProgressBarOption::start>();
 
-    details::ProgressScaleWriter writer{
-        os, get_value<details::ProgressBarOption::bar_width>(),
-        get_value<details::ProgressBarOption::fill>(),
-        get_value<details::ProgressBarOption::lead>(),
-        get_value<details::ProgressBarOption::remainder>()};
+    details::ProgressScaleWriter writer{os, get_value<details::ProgressBarOption::bar_width>(),
+                                        get_value<details::ProgressBarOption::fill>(),
+                                        get_value<details::ProgressBarOption::lead>(),
+                                        get_value<details::ProgressBarOption::remainder>()};
     writer.write(double(progress_) / double(max_progress) * 100.0f);
 
     os << get_value<details::ProgressBarOption::end>();
@@ -1868,7 +1689,8 @@ public:
     const auto end_length = get_value<details::ProgressBarOption::end>().size();
     const auto terminal_width = terminal_size().second;
     // prefix + bar_width + postfix should be <= terminal_width
-    const int remaining = terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
+    const int remaining =
+        terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
     if (remaining > 0) {
       os << std::string(remaining, ' ') << "\r";
     } else if (remaining < 0) {
@@ -1900,8 +1722,8 @@ public:
 // #include <indicators/terminal_size.hpp>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <tuple>
@@ -2153,7 +1975,8 @@ public:
     const auto end_length = get_value<details::ProgressBarOption::end>().size();
     const auto terminal_width = terminal_size().second;
     // prefix + bar_width + postfix should be <= terminal_width
-    const int remaining = terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
+    const int remaining =
+        terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
     if (remaining > 0) {
       os << std::string(remaining, ' ') << "\r";
     } else if (remaining < 0) {
@@ -2186,11 +2009,11 @@ public:
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <tuple>
 #include <type_traits>
-#include <sstream>
 #include <utility>
 
 namespace indicators {
@@ -2390,7 +2213,8 @@ public:
     const auto end_length = get_value<details::ProgressBarOption::end>().size();
     const auto terminal_width = terminal_size().second;
     // prefix + bar_width + postfix should be <= terminal_width
-    const int remaining = terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
+    const int remaining =
+        terminal_width - (prefix_length + start_length + bar_width + end_length + postfix_length);
     if (remaining > 0) {
       os << std::string(remaining, ' ') << "\r";
     } else if (remaining < 0) {
@@ -2782,9 +2606,7 @@ public:
       os << get_value<details::ProgressBarOption::spinner_states>()
               [index_ % get_value<details::ProgressBarOption::spinner_states>().size()];
     if (get_value<details::ProgressBarOption::show_percentage>()) {
-      os << " " << 
-        std::size_t(progress_ / double(max_progress) * 100)
-        << "%";
+      os << " " << std::size_t(progress_ / double(max_progress) * 100) << "%";
     }
 
     if (get_value<details::ProgressBarOption::show_elapsed_time>()) {

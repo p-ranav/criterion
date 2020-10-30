@@ -14,4 +14,4 @@ struct benchmark_result {
   long double overall_worst_execution_time;
 };
 
-}
+} // namespace criterion

@@ -1597,19 +1597,13 @@ public:
 using trim_whitespace = trim_characters<' ', '\t'>;
 } // namespace trim_policy
 
-template <char character> struct delimiter {
-  constexpr static char value = character;
-};
+template <char character> struct delimiter { constexpr static char value = character; };
 
-template <char character> struct quote_character {
-  constexpr static char value = character;
-};
+template <char character> struct quote_character { constexpr static char value = character; };
 
-template <bool flag> struct first_row_is_header {
-  constexpr static bool value = flag;
-};
+template <bool flag> struct first_row_is_header { constexpr static bool value = flag; };
 
-}
+} // namespace csv2
 #pragma once
 #include <cstring>
 // #include <csv2/mio.hpp>
@@ -1623,11 +1617,11 @@ template <class delimiter = delimiter<','>, class quote_character = quote_charac
           class first_row_is_header = first_row_is_header<true>,
           class trim_policy = trim_policy::trim_whitespace>
 class Reader {
-  mio::mmap_source mmap_;          // mmap source
-  const char *buffer_{nullptr};    // pointer to memory-mapped data
-  size_t buffer_size_{0};          // mapped length of buffer
-  size_t header_start_{0};         // start index of header (cache)
-  size_t header_end_{0};           // end index of header (cache)
+  mio::mmap_source mmap_;       // mmap source
+  const char *buffer_{nullptr}; // pointer to memory-mapped data
+  size_t buffer_size_{0};       // mapped length of buffer
+  size_t header_start_{0};      // start index of header (cache)
+  size_t header_end_{0};        // end index of header (cache)
 
 public:
   // Use this if you'd like to mmap the CSV file
@@ -1810,7 +1804,8 @@ public:
       return end();
     if (first_row_is_header::value) {
       const auto header_indices = header_indices_();
-      return RowIterator(buffer_, buffer_size_, header_indices.second  > 0 ? header_indices.second + 1 : 0);
+      return RowIterator(buffer_, buffer_size_,
+                         header_indices.second > 0 ? header_indices.second + 1 : 0);
     } else {
       return RowIterator(buffer_, buffer_size_, 0);
     }
@@ -1830,7 +1825,6 @@ private:
   }
 
 public:
-
   Row header() const {
     size_t start = 0, end = 0;
     Row result;
@@ -1868,39 +1862,33 @@ public:
 #include <cstring>
 // #include <csv2/parameters.hpp>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <utility>
-#include <iostream>
 
 namespace csv2 {
 
-template <class delimiter = delimiter<','>>
-class Writer {
-    std::ofstream& stream_;    // output stream for the writer
+template <class delimiter = delimiter<','>> class Writer {
+  std::ofstream &stream_; // output stream for the writer
 public:
-    template <typename Stream>
-    Writer(Stream&& stream) : stream_(std::forward<Stream>(stream)) {}
+  template <typename Stream> Writer(Stream &&stream) : stream_(std::forward<Stream>(stream)) {}
 
-    ~Writer() {
-        stream_.close();
-    }
+  ~Writer() { stream_.close(); }
 
-    template <typename Container>
-    void write_row(Container&& row) {
-        const auto& strings = std::forward<Container>(row);
-        const auto delimiter_string = std::string(1, delimiter::value);
-        std::copy(strings.begin(), strings.end() - 1,
-            std::ostream_iterator<std::string>(stream_, delimiter_string.c_str()));
-        stream_ << strings.back() << "\n";
-    }
+  template <typename Container> void write_row(Container &&row) {
+    const auto &strings = std::forward<Container>(row);
+    const auto delimiter_string = std::string(1, delimiter::value);
+    std::copy(strings.begin(), strings.end() - 1,
+              std::ostream_iterator<std::string>(stream_, delimiter_string.c_str()));
+    stream_ << strings.back() << "\n";
+  }
 
-    template <typename Container>
-    void write_rows(Container&& rows) {
-        const auto& container_of_rows = std::forward<Container>(rows);
-        for (const auto& row : container_of_rows) {
-            write_row(row);
-        }
+  template <typename Container> void write_rows(Container &&rows) {
+    const auto &container_of_rows = std::forward<Container>(rows);
+    for (const auto &row : container_of_rows) {
+      write_row(row);
     }
+  }
 };
 
-}
+} // namespace csv2

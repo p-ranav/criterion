@@ -1,10 +1,10 @@
 #pragma once
+#include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/csv2.hpp>
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <string>
-#include <map>
-#include <criterion/details/benchmark_result.hpp>
 
 namespace criterion {
 
@@ -16,22 +16,23 @@ class csv_writer {
     return os.str();
   }
 
-  static std::vector<std::string> to_csv_row(const benchmark_result& result) {
-    return std::vector<std::string> {
-      "\"" + result.name + "\"",
-      std::to_string(result.num_warmup_runs),
-      std::to_string(result.num_runs),
-      std::to_string(result.num_iterations),
-      // nanoseconds
-      duration_to_string(result.best_estimate_mean),
-      duration_to_string(result.best_estimate_rsd),
-      duration_to_string(result.overall_best_execution_time),
-      duration_to_string(result.overall_worst_execution_time),
+  static std::vector<std::string> to_csv_row(const benchmark_result &result) {
+    return std::vector<std::string>{
+        "\"" + result.name + "\"",
+        std::to_string(result.num_warmup_runs),
+        std::to_string(result.num_runs),
+        std::to_string(result.num_iterations),
+        // nanoseconds
+        duration_to_string(result.best_estimate_mean),
+        duration_to_string(result.best_estimate_rsd),
+        duration_to_string(result.overall_best_execution_time),
+        duration_to_string(result.overall_worst_execution_time),
     };
   }
 
 public:
-  static bool write_results(const std::string& filename, const std::map<std::string, benchmark_result>& results) {
+  static bool write_results(const std::string &filename,
+                            const std::map<std::string, benchmark_result> &results) {
     bool result{false};
 
     std::ofstream stream(filename);
@@ -42,17 +43,11 @@ public:
       result = true;
 
       writer.write_row(std::vector<std::string>{
-        "\"Name\"",
-        "\"Warmup Runs\"",
-        "\"Benchmark Runs\"",
-        "\"Iterations per Run\"",
-        "\"Best Estimate Mean (ns)\"",
-        "\"Best Estimate RSD (%)\"",
-        "\"Overall Best Execution Time (ns)\"",
-        "\"Overall Worst Execution Time (ns)\""
-      });
+          "\"Name\"", "\"Warmup Runs\"", "\"Benchmark Runs\"", "\"Iterations per Run\"",
+          "\"Best Estimate Mean (ns)\"", "\"Best Estimate RSD (%)\"",
+          "\"Overall Best Execution Time (ns)\"", "\"Overall Worst Execution Time (ns)\""});
 
-      for (const auto& kvpair: results) {
+      for (const auto &kvpair : results) {
         writer.write_row(to_csv_row(kvpair.second));
       }
     }
@@ -62,4 +57,4 @@ public:
   }
 };
 
-}
+} // namespace criterion

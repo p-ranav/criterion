@@ -10,8 +10,8 @@
 #include <map>
 #include <numeric>
 #include <optional>
-#include <string>
 #include <sstream>
+#include <string>
 #include <thread>
 #include <utility>
 
@@ -37,7 +37,8 @@ class benchmark {
       const auto start = steady_clock::now();
       // do nothing
       const auto end = steady_clock::now();
-      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      const auto execution_time =
+          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       durations.push_back(execution_time);
     }
     return *std::min_element(durations.begin(), durations.end());
@@ -54,12 +55,12 @@ class benchmark {
       const auto start = steady_clock::now();
       config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
       const auto end = steady_clock::now();
-      const auto execution_time = static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      const auto execution_time =
+          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
       if (first_run) {
         result = execution_time;
         first_run = false;
-      }
-      else {
+      } else {
         result = std::min(execution_time, result);
       }
     }
@@ -91,27 +92,22 @@ class benchmark {
     max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
-  std::string duration_to_string(const long double& ns) {
+  std::string duration_to_string(const long double &ns) {
     std::stringstream os;
     if (ns < 1E3) {
       os << std::setprecision(3) << ns << "ns";
-    }
-    else if (ns < 1E6) {
+    } else if (ns < 1E6) {
       os << std::setprecision(3) << (ns / 1E3) << "us";
-    }
-    else if (ns < 1E9) {
+    } else if (ns < 1E9) {
       os << std::setprecision(3) << (ns / 1E6) << "ms";
-    }
-    else {
+    } else {
       os << std::setprecision(3) << (ns / 1E9) << "s";
     }
     return os.str();
   }
 
 public:
-
-  benchmark(const benchmark_config& config): 
-    config_(config) {}
+  benchmark(const benchmark_config &config) : config_(config) {}
 
   static inline std::map<std::string, benchmark_result> results;
 
@@ -133,18 +129,12 @@ public:
     // Update number of iterations to run for this benchmark based on estimate
     update_iterations();
 
-    ProgressBar spinner{
-      option::PrefixText{prefix},
-      option::BarWidth{10},
-      option::Lead{"■"},
-      option::Fill{"■"},
-      option::Remainder{"-"},
-      option::ForegroundColor{Color::white},
-      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-      // option::ShowSpinner{false},
-      option::ShowElapsedTime{true},
-      option::ShowRemainingTime{true}
-    };
+    ProgressBar spinner{option::PrefixText{prefix}, option::BarWidth{10}, option::Lead{"■"},
+                        option::Fill{"■"}, option::Remainder{"-"},
+                        option::ForegroundColor{Color::white},
+                        option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+                        // option::ShowSpinner{false},
+                        option::ShowElapsedTime{true}, option::ShowRemainingTime{true}};
 
     spinner.set_option(option::MaxProgress{max_num_runs_});
 
@@ -160,7 +150,7 @@ public:
 
     std::array<long double, 10> durations;
 
-    while(true) {
+    while (true) {
       // Benchmark runs
       for (std::size_t i = 0; i < num_iterations_; i++) {
         std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
@@ -189,8 +179,7 @@ public:
         overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
         overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
         first_run = false;
-      }
-      else {
+      } else {
         // Save record of lowest RSD
         const auto current_lowest_rsd = lowest_rsd;
         lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
@@ -199,8 +188,7 @@ public:
 
           if (mean < best_estimate_mean) {
             best_estimate_mean = mean; // new mean is lower
-          } 
-          else {
+          } else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
           }
         } else {
@@ -208,8 +196,10 @@ public:
         }
 
         // Save best and worst duration
-        overall_best_execution_time = std::min(overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
-        overall_worst_execution_time = std::max(overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
+        overall_best_execution_time = std::min(
+            overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
+        overall_worst_execution_time = std::max(
+            overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
       }
 
       spinner.set_progress(num_runs);
@@ -226,35 +216,24 @@ public:
       num_runs += 1;
     }
 
-    std::cout 
-      << termcolor::bold 
-      << termcolor::green 
-      << std::setprecision(3)
-      << "    "
-      << duration_to_string(best_estimate_mean) 
-      << " ± " << lowest_rsd << "%"
-      << " {Best: "
-      << duration_to_string(overall_best_execution_time) << ", Worst: "
-      << duration_to_string(overall_worst_execution_time)
-      << "}\n\n"
-      << termcolor::reset;
+    std::cout << termcolor::bold << termcolor::green << std::setprecision(3) << "    "
+              << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+              << " {Best: " << duration_to_string(overall_best_execution_time)
+              << ", Worst: " << duration_to_string(overall_worst_execution_time) << "}\n\n"
+              << termcolor::reset;
 
     results.insert(std::make_pair(
-      prefix,
-      benchmark_result {
-        .name = config_.name + config_.parameterized_instance_name,
-        .num_warmup_runs = warmup_runs_,
-        .num_runs = max_num_runs_,
-        .num_iterations = num_iterations_,
-        .best_estimate_mean = best_estimate_mean,
-        .best_estimate_rsd = lowest_rsd,
-        .overall_best_execution_time = overall_best_execution_time,
-        .overall_worst_execution_time = overall_worst_execution_time
-      }
-    ));
+        prefix, benchmark_result{.name = config_.name + config_.parameterized_instance_name,
+                                 .num_warmup_runs = warmup_runs_,
+                                 .num_runs = max_num_runs_,
+                                 .num_iterations = num_iterations_,
+                                 .best_estimate_mean = best_estimate_mean,
+                                 .best_estimate_rsd = lowest_rsd,
+                                 .overall_best_execution_time = overall_best_execution_time,
+                                 .overall_worst_execution_time = overall_worst_execution_time}));
 
     indicators::show_console_cursor(true);
   }
 };
 
-}
+} // namespace criterion
