@@ -77,8 +77,8 @@ struct benchmark_template_registration_helper_struct {
   namespace detail {                                                           \
   /* forward declare the benchmark function that we define later */            \
   template <class T = CONCAT(Name, BenchmarkParameters)> \
-  struct CONCAT(__benchmark_function_wrapper__, __LINE__) {                    \
-    static void CONCAT(_registered_fun_, __LINE__)(                            \
+  struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                    \
+    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                            \
         std::chrono::steady_clock::time_point &,                               \
         std::optional<std::chrono::steady_clock::time_point> &, \
         void *);       \
@@ -87,32 +87,32 @@ struct benchmark_template_registration_helper_struct {
   namespace /* ensure internal linkage for struct */                           \
   {                                                                            \
   /* helper struct for static registration in ctor */                          \
-  struct CONCAT(_register_struct_, __LINE__) {                                 \
-    CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
+  struct CONCAT(Name, CONCAT(_register_struct_, __LINE__)) {                                 \
+    CONCAT(Name, CONCAT(_register_struct_, __LINE__))() { /* called once before main */      \
       criterion::benchmark_template_registration_helper_struct::register_benchmark_template(criterion::benchmark_config{                            \
           .name = #Name,                                                        \
-          .fn = CONCAT(__benchmark_function_wrapper__,                         \
-                       __LINE__)<CONCAT(Name, BenchmarkParameters)>::CONCAT(_registered_fun_, __LINE__)});        \
+          .fn = CONCAT(Name, CONCAT(__benchmark_function_wrapper__,                         \
+                       __LINE__))<CONCAT(Name, BenchmarkParameters)>::CONCAT(Name, CONCAT(_registered_fun_, __LINE__))});        \
     }                                                                          \
-  } CONCAT(_register_struct_instance_, __LINE__);                              \
+  } CONCAT(Name, CONCAT(_register_struct_instance_, __LINE__));                              \
   }                                                                            \
   \
   namespace /* ensure internal linkage for struct */                           \
   {                                                                            \
   static CONCAT(Name, BenchmarkParameters) CONCAT(CONCAT(Name, _benchmark_template_parameters), __LINE__) = {}; \
   /* helper struct for static registration in ctor */                          \
-  struct CONCAT(_instantiation_struct_, __LINE__) {                                 \
-    CONCAT(_instantiation_struct_, __LINE__)() { /* called once before main */      \
+  struct CONCAT(Name, CONCAT(_instantiation_struct_, __LINE__)) {                                 \
+    CONCAT(Name, CONCAT(_instantiation_struct_, __LINE__))() { /* called once before main */      \
       criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(Name, BenchmarkParameters)>(#Name, "", CONCAT(CONCAT(Name, _benchmark_template_parameters), __LINE__)); \
     }                                                                          \
-  } CONCAT(_instantiation_struct_instance_, __LINE__);                              \
+  } CONCAT(Name, CONCAT(_instantiation_struct_instance_, __LINE__));                              \
   } \
   }                                                                            \
                                                                                \
   /* now actually defined to allow BENCHMARK("name") { ... } syntax */         \
   template <class T> \
-  void detail::CONCAT(__benchmark_function_wrapper__, __LINE__)<T>::CONCAT(       \
-      _registered_fun_, __LINE__)(                                             \
+  void detail::CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__))<T>::CONCAT(Name, CONCAT(       \
+      _registered_fun_, __LINE__))(                                             \
       [[maybe_unused]] std::chrono::steady_clock::time_point &                 \
           __benchmark_start_timestamp,                                         \
       [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &  \
@@ -125,8 +125,8 @@ struct benchmark_template_registration_helper_struct {
   namespace detail {                                                           \
   /* forward declare the benchmark function that we define later */            \
   template <class T = CONCAT(Name, BenchmarkParameters)> \
-  struct CONCAT(__benchmark_function_wrapper__, __LINE__) {                    \
-    static void CONCAT(_registered_fun_, __LINE__)(                            \
+  struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                    \
+    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                            \
         std::chrono::steady_clock::time_point &,                               \
         std::optional<std::chrono::steady_clock::time_point> &, \
         void *);       \
@@ -135,21 +135,21 @@ struct benchmark_template_registration_helper_struct {
   namespace /* ensure internal linkage for struct */                           \
   {                                                                            \
   /* helper struct for static registration in ctor */                          \
-  struct CONCAT(_register_struct_, __LINE__) {                                 \
-    CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
+  struct CONCAT(Name, CONCAT(_register_struct_, __LINE__)) {                                 \
+    CONCAT(Name, CONCAT(_register_struct_, __LINE__))() { /* called once before main */      \
       criterion::benchmark_template_registration_helper_struct::register_benchmark_template(criterion::benchmark_config{                            \
           .name = #Name,                                                        \
-          .fn = CONCAT(__benchmark_function_wrapper__,                         \
-                       __LINE__)<CONCAT(Name, BenchmarkParameters)>::CONCAT(_registered_fun_, __LINE__)});        \
+          .fn = CONCAT(Name, CONCAT(__benchmark_function_wrapper__,                         \
+                       __LINE__))<CONCAT(Name, BenchmarkParameters)>::CONCAT(Name, CONCAT(_registered_fun_, __LINE__))});        \
     }                                                                          \
-  } CONCAT(_register_struct_instance_, __LINE__);                              \
+  } CONCAT(Name, CONCAT(_register_struct_instance_, __LINE__));                              \
   }                                                                            \
   }                                                                            \
                                                                                \
   /* now actually defined to allow BENCHMARK("name") { ... } syntax */         \
   template <class T> \
-  void detail::CONCAT(__benchmark_function_wrapper__, __LINE__)<T>::CONCAT(       \
-      _registered_fun_, __LINE__)(                                             \
+  void detail::CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__))<T>::CONCAT(Name, CONCAT(       \
+      _registered_fun_, __LINE__))(                                             \
       [[maybe_unused]] std::chrono::steady_clock::time_point &                 \
           __benchmark_start_timestamp,                                         \
       [[maybe_unused]] std::optional<std::chrono::steady_clock::time_point> &  \
@@ -234,11 +234,11 @@ struct benchmark_template_registration_helper_struct {
   {                                                                            \
   static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = {__VA_ARGS__}; \
   /* helper struct for static registration in ctor */                          \
-  struct CONCAT(_instantiation_struct_, __LINE__) {                                 \
-    CONCAT(_instantiation_struct_, __LINE__)() { /* called once before main */      \
+  struct CONCAT(TemplateName, CONCAT(_instantiation_struct_, __LINE__)) {                                 \
+    CONCAT(TemplateName, CONCAT(_instantiation_struct_, __LINE__))() { /* called once before main */      \
       criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
     }                                                                          \
-  } CONCAT(_instantiation_struct_instance_, __LINE__);                              \
+  } CONCAT(TemplateName, CONCAT(_instantiation_struct_instance_, __LINE__));                              \
   }
 
 #define GET_FIRST(first, ...) first
@@ -250,11 +250,11 @@ struct benchmark_template_registration_helper_struct {
   {                                                                            \
   static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__), Index) = {GET_REST(PackedArgument)}; \
   /* helper struct for static registration in ctor */                          \
-  struct CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index) {                                 \
-    CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)() { /* called once before main */      \
+  struct CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)) {                                 \
+    CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)()) { /* called once before main */      \
       criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, GET_FIRST(PackedArgument), CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__), Index)); \
     }                                                                          \
-  } CONCAT(CONCAT(_instantiation_struct_instance_, __LINE__), Index);                              \
+  } CONCAT(TemplateName, CONCAT(CONCAT(_instantiation_struct_instance_, __LINE__), Index));                              \
   }
 
 
