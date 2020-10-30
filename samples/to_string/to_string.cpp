@@ -27,13 +27,19 @@ auto DoubleToStringConversionTest(int count) {
   return outNumbers;
 }
 
-BENCHMARK(ToString, /* parameters -> */ std::function<std::vector<std::string>(int)>, int) {
-  SETUP_BENCHMARK(const auto fn = GET_ARGUMENT(0); const auto size = GET_ARGUMENT(1);)
+BENCHMARK(ToString, /* parameters -> */ std::function<std::vector<std::string>(int)>, int) 
+{
+  SETUP_BENCHMARK(
+    const auto fn = GET_ARGUMENT(0); 
+    const auto size = GET_ARGUMENT(1);
+  )
+
   fn(size);
-  TEARDOWN_BENCHMARK()
 }
 
-REGISTER_BENCHMARK_FOR_EACH(ToString, ("/int/10", IntToStringConversionTest, 10),
-                            ("/int/1000", IntToStringConversionTest, 1000),
-                            ("/double/10", DoubleToStringConversionTest, 10),
-                            ("/double/1000", DoubleToStringConversionTest, 1000))
+REGISTER_BENCHMARK_FOR_EACH(ToString, 
+  ("/int/10", IntToStringConversionTest, 10),
+  ("/int/1000", IntToStringConversionTest, 1000),
+  ("/double/10", DoubleToStringConversionTest, 10),
+  ("/double/1000", DoubleToStringConversionTest, 1000)
+)

@@ -2,15 +2,24 @@
 #include <vector>
 
 BENCHMARK(VectorSort, size_t) {
-  SETUP_BENCHMARK(const auto size = GET_ARGUMENT(0); std::vector<int> vec(size, 0);)
+  SETUP_BENCHMARK(
+    const auto size = GET_ARGUMENT(0); 
+    std::vector<int> vec(size, 0);
+  )
 
   // Code being benchmarked
   std::sort(vec.begin(), vec.end());
 
-  TEARDOWN_BENCHMARK(vec.clear();)
+  TEARDOWN_BENCHMARK(
+    vec.clear();
+  )
 }
 
-REGISTER_BENCHMARK_FOR_EACH(VectorSort, ("/10", 10), ("/100", 100), ("/1000", 1000))
+REGISTER_BENCHMARK_FOR_EACH(VectorSort, 
+  ("/10", 10), 
+  ("/100", 100), 
+  ("/1000", 1000)
+)
 
 // vector_sort/10
 //    μ = 7.7ns ± 3.9% [N = 100000000]
