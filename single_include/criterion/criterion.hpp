@@ -4560,7 +4560,7 @@ struct benchmark_result {
   long double overall_worst_execution_time;
 };
 
-}
+} // namespace criterion
 
 namespace criterion {
 
@@ -4638,23 +4638,23 @@ struct benchmark_config {
   benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
 };
 
-}
+} // namespace criterion
 #pragma once
 #include <string>
 
-    namespace criterion {
+namespace criterion {
 
-  struct benchmark_result {
-    std::string name;
-    std::size_t num_warmup_runs;
-    std::size_t num_runs;
-    std::size_t num_iterations;
-    long double best_estimate_mean;
-    long double best_estimate_rsd;
-    long double overall_best_execution_time;
-    long double overall_worst_execution_time;
-  };
-}
+struct benchmark_result {
+  std::string name;
+  std::size_t num_warmup_runs;
+  std::size_t num_runs;
+  std::size_t num_iterations;
+  long double best_estimate_mean;
+  long double best_estimate_rsd;
+  long double overall_best_execution_time;
+  long double overall_worst_execution_time;
+};
+} // namespace criterion
 #pragma once
 #include <algorithm>
 #include <array>
@@ -4672,227 +4672,227 @@ struct benchmark_config {
 #include <thread>
 #include <utility>
 
-    // #include <criterion/details/benchmark_config.hpp>
-    // #include <criterion/details/benchmark_result.hpp>
-    // #include <criterion/details/indicators.hpp>
+// #include <criterion/details/benchmark_config.hpp>
+// #include <criterion/details/benchmark_result.hpp>
+// #include <criterion/details/indicators.hpp>
 
-    namespace criterion {
+namespace criterion {
 
-  class benchmark {
-    benchmark_config config_;
-    using Fn = benchmark_config::Fn;
+class benchmark {
+  benchmark_config config_;
+  using Fn = benchmark_config::Fn;
 
-    std::size_t warmup_runs_{3};
-    std::size_t num_iterations_{0};
-    std::size_t max_num_runs_{0};
+  std::size_t warmup_runs_{3};
+  std::size_t num_iterations_{0};
+  std::size_t max_num_runs_{0};
 
-    long double estimate_minimum_measurement_cost() {
-      using namespace std::chrono;
-      std::vector<long double> durations;
+  long double estimate_minimum_measurement_cost() {
+    using namespace std::chrono;
+    std::vector<long double> durations;
 
-      for (std::size_t i = 0; i < 10; i++) {
-        const auto start = steady_clock::now();
-        // do nothing
-        const auto end = steady_clock::now();
-        const auto execution_time =
-            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-        durations.push_back(execution_time);
-      }
-      return *std::min_element(durations.begin(), durations.end());
+    for (std::size_t i = 0; i < 10; i++) {
+      const auto start = steady_clock::now();
+      // do nothing
+      const auto end = steady_clock::now();
+      const auto execution_time =
+          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      durations.push_back(execution_time);
     }
+    return *std::min_element(durations.begin(), durations.end());
+  }
 
-    long double estimate_execution_time() {
-      using namespace std::chrono;
+  long double estimate_execution_time() {
+    using namespace std::chrono;
 
-      long double result;
-      bool first_run{true};
-      for (std::size_t i = 0; i < warmup_runs_; i++) {
-        std::chrono::steady_clock::time_point start_timestamp;
-        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-        const auto start = steady_clock::now();
-        config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
-        const auto end = steady_clock::now();
-        const auto execution_time =
-            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-        if (first_run) {
-          result = execution_time;
-          first_run = false;
-        } else {
-          result = std::min(execution_time, result);
-        }
-      }
-      return result;
-    }
-
-    void update_iterations() {
-      auto early_estimate_execution_time = estimate_execution_time();
-
-      if (early_estimate_execution_time < 1)
-        early_estimate_execution_time = 1;
-
-      num_iterations_ = 10; // fixed
-      const auto min_runs = 10;
-      const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
-      const auto ten_seconds = 1e+10;
-      const auto two_seconds = 2e+9;
-
-      auto max_benchmark_time = ten_seconds;
-      if (early_estimate_execution_time < 1000) { // nanoseconds
-        max_benchmark_time = two_seconds;
-      }
-
-      const auto benchmark_time = std::max(double(min_benchmark_time), max_benchmark_time);
-      const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
-
-      max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
-
-      max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
-    }
-
-    std::string duration_to_string(const long double &ns) {
-      std::stringstream os;
-      if (ns < 1E3) {
-        os << std::setprecision(3) << ns << "ns";
-      } else if (ns < 1E6) {
-        os << std::setprecision(3) << (ns / 1E3) << "us";
-      } else if (ns < 1E9) {
-        os << std::setprecision(3) << (ns / 1E6) << "ms";
+    long double result;
+    bool first_run{true};
+    for (std::size_t i = 0; i < warmup_runs_; i++) {
+      std::chrono::steady_clock::time_point start_timestamp;
+      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+      const auto start = steady_clock::now();
+      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
+      const auto end = steady_clock::now();
+      const auto execution_time =
+          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      if (first_run) {
+        result = execution_time;
+        first_run = false;
       } else {
-        os << std::setprecision(3) << (ns / 1E9) << "s";
+        result = std::min(execution_time, result);
       }
-      return os.str();
+    }
+    return result;
+  }
+
+  void update_iterations() {
+    auto early_estimate_execution_time = estimate_execution_time();
+
+    if (early_estimate_execution_time < 1)
+      early_estimate_execution_time = 1;
+
+    num_iterations_ = 10; // fixed
+    const auto min_runs = 10;
+    const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
+    const auto ten_seconds = 1e+10;
+    const auto two_seconds = 2e+9;
+
+    auto max_benchmark_time = ten_seconds;
+    if (early_estimate_execution_time < 1000) { // nanoseconds
+      max_benchmark_time = two_seconds;
     }
 
-  public:
-    benchmark(const benchmark_config &config) : config_(config) {}
+    const auto benchmark_time = std::max(double(min_benchmark_time), max_benchmark_time);
+    const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
 
-    static inline std::map<std::string, benchmark_result> results;
+    max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
 
-    void run() {
+    max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
+  }
 
-      using namespace std::chrono;
+  std::string duration_to_string(const long double &ns) {
+    std::stringstream os;
+    if (ns < 1E3) {
+      os << std::setprecision(3) << ns << "ns";
+    } else if (ns < 1E6) {
+      os << std::setprecision(3) << (ns / 1E3) << "us";
+    } else if (ns < 1E9) {
+      os << std::setprecision(3) << (ns / 1E6) << "ms";
+    } else {
+      os << std::setprecision(3) << (ns / 1E9) << "s";
+    }
+    return os.str();
+  }
 
-      // run empty function to estimate minimum delay in scheduling and executing user function
-      const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
+public:
+  benchmark(const benchmark_config &config) : config_(config) {}
 
-      const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
-      // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
+  static inline std::map<std::string, benchmark_result> results;
 
-      using namespace indicators;
+  void run() {
 
-      show_console_cursor(false);
+    using namespace std::chrono;
 
-      // Get an early estimate for execution time
-      // Update number of iterations to run for this benchmark based on estimate
-      update_iterations();
+    // run empty function to estimate minimum delay in scheduling and executing user function
+    const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
 
-      ProgressBar spinner{option::PrefixText{prefix}, option::BarWidth{10}, option::Lead{"■"},
-                          option::Fill{"■"}, option::Remainder{"-"},
-                          option::ForegroundColor{Color::white},
-                          option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-                          // option::ShowSpinner{false},
-                          option::ShowElapsedTime{true}, option::ShowRemainingTime{true}};
+    const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
+    // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
 
-      spinner.set_option(option::MaxProgress{max_num_runs_});
+    using namespace indicators;
 
-      long double lowest_rsd = 100;
-      long double best_estimate_mean = 0;
-      bool first_run{true};
+    show_console_cursor(false);
 
-      long double overall_best_execution_time = 0;
-      long double overall_worst_execution_time = 0;
+    // Get an early estimate for execution time
+    // Update number of iterations to run for this benchmark based on estimate
+    update_iterations();
 
-      std::size_t num_runs = 0;
-      spinner.set_progress(num_runs);
+    ProgressBar spinner{option::PrefixText{prefix}, option::BarWidth{10}, option::Lead{"■"},
+                        option::Fill{"■"}, option::Remainder{"-"},
+                        option::ForegroundColor{Color::white},
+                        option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+                        // option::ShowSpinner{false},
+                        option::ShowElapsedTime{true}, option::ShowRemainingTime{true}};
 
-      std::array<long double, 10> durations;
+    spinner.set_option(option::MaxProgress{max_num_runs_});
 
-      while (true) {
-        // Benchmark runs
-        for (std::size_t i = 0; i < num_iterations_; i++) {
-          std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-          auto start = steady_clock::now();
-          config_.fn(start, teardown_timestamp, config_.parameters);
-          auto end = steady_clock::now();
-          if (teardown_timestamp)
-            end = teardown_timestamp.value();
-          const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
-          durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
-        }
-        auto size = num_iterations_;
-        const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
+    long double lowest_rsd = 100;
+    long double best_estimate_mean = 0;
+    bool first_run{true};
 
-        long double E = 0;
-        for (std::size_t i = 0; i < size; i++) {
-          E += std::pow(durations[i] - mean, 2);
-        }
-        const long double variance = E / size;
-        const long double standard_deviation = std::sqrt(variance);
-        const long double relative_standard_deviation = standard_deviation * 100 / mean;
+    long double overall_best_execution_time = 0;
+    long double overall_worst_execution_time = 0;
 
-        if (first_run) {
-          lowest_rsd = relative_standard_deviation;
-          best_estimate_mean = mean;
-          overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
-          overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
-          first_run = false;
-        } else {
-          // Save record of lowest RSD
-          const auto current_lowest_rsd = lowest_rsd;
-          lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
-          if (lowest_rsd < current_lowest_rsd) {
-            // There's a new LOWEST relative standard deviation
+    std::size_t num_runs = 0;
+    spinner.set_progress(num_runs);
 
-            if (mean < best_estimate_mean) {
-              best_estimate_mean = mean; // new mean is lower
-            } else {
-              lowest_rsd = current_lowest_rsd; // go back to old estimate
-            }
+    std::array<long double, 10> durations;
+
+    while (true) {
+      // Benchmark runs
+      for (std::size_t i = 0; i < num_iterations_; i++) {
+        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+        auto start = steady_clock::now();
+        config_.fn(start, teardown_timestamp, config_.parameters);
+        auto end = steady_clock::now();
+        if (teardown_timestamp)
+          end = teardown_timestamp.value();
+        const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
+        durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
+      }
+      auto size = num_iterations_;
+      const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
+
+      long double E = 0;
+      for (std::size_t i = 0; i < size; i++) {
+        E += std::pow(durations[i] - mean, 2);
+      }
+      const long double variance = E / size;
+      const long double standard_deviation = std::sqrt(variance);
+      const long double relative_standard_deviation = standard_deviation * 100 / mean;
+
+      if (first_run) {
+        lowest_rsd = relative_standard_deviation;
+        best_estimate_mean = mean;
+        overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
+        overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+        first_run = false;
+      } else {
+        // Save record of lowest RSD
+        const auto current_lowest_rsd = lowest_rsd;
+        lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
+        if (lowest_rsd < current_lowest_rsd) {
+          // There's a new LOWEST relative standard deviation
+
+          if (mean < best_estimate_mean) {
+            best_estimate_mean = mean; // new mean is lower
           } else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
           }
-
-          // Save best and worst duration
-          overall_best_execution_time = std::min(
-              overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
-          overall_worst_execution_time = std::max(
-              overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
+        } else {
+          lowest_rsd = current_lowest_rsd; // go back to old estimate
         }
 
-        spinner.set_progress(num_runs);
-
-        // Show iteration as postfix text
-        // std::stringstream os;
-        // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
-        // spinner.set_option(option::PostfixText{os.str()});
-
-        if (num_runs >= max_num_runs_) {
-          break;
-        }
-
-        num_runs += 1;
+        // Save best and worst duration
+        overall_best_execution_time = std::min(
+            overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
+        overall_worst_execution_time = std::max(
+            overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
       }
 
-      std::cout << termcolor::bold << termcolor::green << std::setprecision(3) << "    "
-                << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
-                << " {Best: " << duration_to_string(overall_best_execution_time)
-                << ", Worst: " << duration_to_string(overall_worst_execution_time) << "}\n\n"
-                << termcolor::reset;
+      spinner.set_progress(num_runs);
 
-      results.insert(std::make_pair(
-          prefix, benchmark_result{.name = config_.name + config_.parameterized_instance_name,
-                                   .num_warmup_runs = warmup_runs_,
-                                   .num_runs = max_num_runs_,
-                                   .num_iterations = num_iterations_,
-                                   .best_estimate_mean = best_estimate_mean,
-                                   .best_estimate_rsd = lowest_rsd,
-                                   .overall_best_execution_time = overall_best_execution_time,
-                                   .overall_worst_execution_time = overall_worst_execution_time}));
+      // Show iteration as postfix text
+      // std::stringstream os;
+      // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
+      // spinner.set_option(option::PostfixText{os.str()});
 
-      indicators::show_console_cursor(true);
+      if (num_runs >= max_num_runs_) {
+        break;
+      }
+
+      num_runs += 1;
     }
-  };
-}
+
+    std::cout << termcolor::bold << termcolor::green << std::setprecision(3) << "    "
+              << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+              << " {Best: " << duration_to_string(overall_best_execution_time)
+              << ", Worst: " << duration_to_string(overall_worst_execution_time) << "}\n\n"
+              << termcolor::reset;
+
+    results.insert(std::make_pair(
+        prefix, benchmark_result{.name = config_.name + config_.parameterized_instance_name,
+                                 .num_warmup_runs = warmup_runs_,
+                                 .num_runs = max_num_runs_,
+                                 .num_iterations = num_iterations_,
+                                 .best_estimate_mean = best_estimate_mean,
+                                 .best_estimate_rsd = lowest_rsd,
+                                 .overall_best_execution_time = overall_best_execution_time,
+                                 .overall_worst_execution_time = overall_worst_execution_time}));
+
+    indicators::show_console_cursor(true);
+  }
+};
+} // namespace criterion
 #pragma once
 // #include <criterion/details/benchmark.hpp>
 // #include <criterion/details/benchmark_config.hpp>
@@ -4902,25 +4902,25 @@ struct benchmark_config {
 #include <string>
 #include <unordered_map>
 
-    namespace criterion {
+namespace criterion {
 
-  struct benchmark_registration_helper_struct {
-    static std::vector<benchmark_config> &registered_benchmarks() {
-      static std::vector<benchmark_config> v;
-      return v;
-    }
+struct benchmark_registration_helper_struct {
+  static std::vector<benchmark_config> &registered_benchmarks() {
+    static std::vector<benchmark_config> v;
+    return v;
+  }
 
-    static void register_benchmark(const benchmark_config &config) {
-      registered_benchmarks().push_back(config);
-    }
+  static void register_benchmark(const benchmark_config &config) {
+    registered_benchmarks().push_back(config);
+  }
 
-    static void execute_registered_benchmarks() {
-      for (const auto &config : registered_benchmarks()) {
-        benchmark{config}.run();
-      }
+  static void execute_registered_benchmarks() {
+    for (const auto &config : registered_benchmarks()) {
+      benchmark{config}.run();
     }
-  };
-}
+  }
+};
+} // namespace criterion
 
 #define SETUP_BENCHMARK(...)                                                                       \
   __VA_ARGS__                                                                                      \

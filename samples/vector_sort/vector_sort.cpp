@@ -10,8 +10,7 @@ BENCHMARK(VectorSort, size_t) {
   TEARDOWN_BENCHMARK(vec.clear();)
 }
 
-REGISTER_BENCHMARK_FOR_EACH(VectorSort, ("/10", 10), ("/100", 100), ("/1000", 1000),
-                            ("/10000", 10000))
+REGISTER_BENCHMARK_FOR_EACH(VectorSort, ("/10", 10), ("/100", 100), ("/1000", 1000))
 
 // vector_sort/10
 //    μ = 7.7ns ± 3.9% [N = 100000000]
