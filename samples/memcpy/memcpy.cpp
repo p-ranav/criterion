@@ -4,12 +4,12 @@ BENCHMARK_TEMPLATE(Memcpy, size_t)
 {
   SETUP_BENCHMARK(
     const auto size = BENCHMARK_ARGUMENTS(0);
-    int * src = new int[size];
-    std::memset(src, 0, size);
-    int * dst = new int[size];
+    char* src = new char[size];
+    char* dst = new char[size];
+    memset(src, 'x', size);
   ) 
 
-  memcpy(dst, src, sizeof(int) * size);
+  memcpy(dst, src, size);
 
   TEARDOWN_BENCHMARK(
     delete[] src;
@@ -17,6 +17,6 @@ BENCHMARK_TEMPLATE(Memcpy, size_t)
   )
 }
 
-RUN_BENCHMARK_TEMPLATE(Memcpy, "/int/32k", 32000)
-RUN_BENCHMARK_TEMPLATE(Memcpy, "/int/128k", 128000)
-RUN_BENCHMARK_TEMPLATE(Memcpy, "/int/1M", 1000000)
+RUN_BENCHMARK_TEMPLATE(Memcpy, "/32k", 32000)
+RUN_BENCHMARK_TEMPLATE(Memcpy, "/128k", 128000)
+RUN_BENCHMARK_TEMPLATE(Memcpy, "/1M", 1000000)
