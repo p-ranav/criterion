@@ -29,7 +29,7 @@ auto DoubleToStringConversionTest(int count)
   return outNumbers;
 }
 
-BENCHMARK_TEMPLATE(to_string, /* parameters -> */ std::function<std::vector<std::string>(int)>, int)
+BENCHMARK_TEMPLATE(ToString, /* parameters -> */ std::function<std::vector<std::string>(int)>, int)
 {
   SETUP_BENCHMARK(
     const auto fn = BENCHMARK_ARGUMENTS(0);
@@ -39,7 +39,7 @@ BENCHMARK_TEMPLATE(to_string, /* parameters -> */ std::function<std::vector<std:
   TEARDOWN_BENCHMARK()
 }
 
-RUN_BENCHMARK_TEMPLATE(to_string, "/int/10", IntToStringConversionTest, 10)
-RUN_BENCHMARK_TEMPLATE(to_string, "/int/1000", IntToStringConversionTest, 1000)
-RUN_BENCHMARK_TEMPLATE(to_string, "/double/10", DoubleToStringConversionTest, 10)
-RUN_BENCHMARK_TEMPLATE(to_string, "/double/1000", DoubleToStringConversionTest, 1000)
+RUN_BENCHMARK_TEMPLATE(ToString, "/int/10", IntToStringConversionTest, 10)
+RUN_BENCHMARK_TEMPLATE(ToString, "/int/1000", IntToStringConversionTest, 1000)
+RUN_BENCHMARK_TEMPLATE(ToString, "/double/10", DoubleToStringConversionTest, 10)
+RUN_BENCHMARK_TEMPLATE(ToString, "/double/1000", DoubleToStringConversionTest, 1000)

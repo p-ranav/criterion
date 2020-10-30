@@ -2,7 +2,7 @@
 #include <set>
 #include <unordered_set>
 
-BENCHMARK("set_insert")
+BENCHMARK(SetInsert)
 {
   SETUP_BENCHMARK(
     std::set<int> set;
@@ -17,7 +17,7 @@ BENCHMARK("set_insert")
   )
 }
 
-BENCHMARK("unordered_set_insert")
+BENCHMARK(UnorderedSetInsert)
 {
   SETUP_BENCHMARK(
     std::unordered_set<int> set;

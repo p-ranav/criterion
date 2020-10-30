@@ -38,7 +38,6 @@ struct benchmark_registration_helper_struct {
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
 
 #define BENCHMARK(Name)                                                        \
-  static_assert(true, Name " must be string literal");                         \
   namespace detail {                                                           \
   /* struct with static function we later define */                            \
   struct CONCAT(__benchmark_function_wrapper__, __LINE__) {                    \
@@ -54,7 +53,7 @@ struct benchmark_registration_helper_struct {
   struct CONCAT(_register_struct_, __LINE__) {                                 \
     CONCAT(_register_struct_, __LINE__)() { /* called once before main */      \
       benchmark_registration_helper_struct::register_benchmark(benchmark_config{                                     \
-          .name = Name,                                                        \
+          .name = #Name,                                                        \
           .fn = CONCAT(__benchmark_function_wrapper__,                         \
                        __LINE__)::CONCAT(_registered_fun_, __LINE__)});        \
     }                                                                          \

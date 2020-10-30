@@ -2,7 +2,7 @@
 #include <list>
 #include <vector>
 
-BENCHMARK("std::list<int>.forward")
+BENCHMARK(ListIntForward)
 {
   SETUP_BENCHMARK(
     std::list<int> list;
@@ -19,7 +19,7 @@ BENCHMARK("std::list<int>.forward")
   )
 }
 
-BENCHMARK("std::vector<int>.forward")
+BENCHMARK(VectorIntForward)
 {
   SETUP_BENCHMARK(
     std::vector<int> vec;

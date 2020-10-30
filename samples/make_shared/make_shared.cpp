@@ -16,7 +16,7 @@ std::shared_ptr<Foo> Create_Foo_With_MakeShared() {
   return std::make_shared<Foo>(); 
 }
 
-BENCHMARK_TEMPLATE(shared_ptr, std::function<std::shared_ptr<Foo>()>)
+BENCHMARK_TEMPLATE(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>)
 {
   SETUP_BENCHMARK(
     auto test_function = BENCHMARK_ARGUMENTS(0);
@@ -29,8 +29,8 @@ BENCHMARK_TEMPLATE(shared_ptr, std::function<std::shared_ptr<Foo>()>)
   )
 }
 
-RUN_BENCHMARK_TEMPLATE(shared_ptr, "/new", Create_Foo_With_New)
-RUN_BENCHMARK_TEMPLATE(shared_ptr, "/make_shared", Create_Foo_With_MakeShared)
+RUN_BENCHMARK_TEMPLATE(ConstructSharedPtr, "/new", Create_Foo_With_New)
+RUN_BENCHMARK_TEMPLATE(ConstructSharedPtr, "/make_shared", Create_Foo_With_MakeShared)
 
 // Lamba
 // RUN_BENCHMARK_TEMPLATE(shared_ptr, "/new", [] { return std::shared_ptr<Foo>(new Foo()); })

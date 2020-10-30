@@ -1,7 +1,7 @@
 #include <vector>
 #include <criterion/criterion.hpp>
 
-BENCHMARK_TEMPLATE(vector_sort, size_t)
+BENCHMARK_TEMPLATE(VectorSort, size_t)
 {
   SETUP_BENCHMARK(
     const auto size = BENCHMARK_ARGUMENTS(0);
@@ -16,10 +16,10 @@ BENCHMARK_TEMPLATE(vector_sort, size_t)
   )
 }
 
-RUN_BENCHMARK_TEMPLATE(vector_sort, "/10", 10)
-RUN_BENCHMARK_TEMPLATE(vector_sort, "/100", 100)
-RUN_BENCHMARK_TEMPLATE(vector_sort, "/1000", 1000)
-RUN_BENCHMARK_TEMPLATE(vector_sort, "/10000", 10000)
+RUN_BENCHMARK_TEMPLATE(VectorSort, "/10", 10)
+RUN_BENCHMARK_TEMPLATE(VectorSort, "/100", 100)
+RUN_BENCHMARK_TEMPLATE(VectorSort, "/1000", 1000)
+RUN_BENCHMARK_TEMPLATE(VectorSort, "/10000", 10000)
 
 // vector_sort/10
 //    μ = 7.7ns ± 3.9% [N = 100000000]
