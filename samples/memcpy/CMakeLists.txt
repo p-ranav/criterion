@@ -16,7 +16,7 @@ CPMAddPackage(NAME Criterion SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 #   set(CMAKE_BUILD_TYPE Release)
 # endif()
 
-# set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-fmacro-backtrace-limit=0") #-Wall -Wextra")
 # set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 

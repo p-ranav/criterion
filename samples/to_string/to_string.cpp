@@ -39,7 +39,9 @@ BENCHMARK(ToString, /* parameters -> */ std::function<std::vector<std::string>(i
   TEARDOWN_BENCHMARK()
 }
 
-REGISTER_BENCHMARK(ToString, "/int/10", IntToStringConversionTest, 10)
-REGISTER_BENCHMARK(ToString, "/int/1000", IntToStringConversionTest, 1000)
-REGISTER_BENCHMARK(ToString, "/double/10", DoubleToStringConversionTest, 10)
-REGISTER_BENCHMARK(ToString, "/double/1000", DoubleToStringConversionTest, 1000)
+REGISTER_BENCHMARK_FOR_EACH(ToString,
+  ("/int/10", IntToStringConversionTest, 10),
+  ("/int/1000", IntToStringConversionTest, 1000),
+  ("/double/10", DoubleToStringConversionTest, 10),
+  ("/double/1000", DoubleToStringConversionTest, 1000)
+)

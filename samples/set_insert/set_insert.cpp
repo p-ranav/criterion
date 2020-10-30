@@ -16,7 +16,6 @@ BENCHMARK(SetInsert)
     set.clear();
   )
 }
-REGISTER_BENCHMARK(SetInsert, "/insert_one")
 
 BENCHMARK(UnorderedSetInsert)
 {
@@ -32,4 +31,3 @@ BENCHMARK(UnorderedSetInsert)
     set.clear();
   )
 }
-REGISTER_BENCHMARK(UnorderedSetInsert, "/unordered/insert_one")

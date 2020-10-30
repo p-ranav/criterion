@@ -4,7 +4,6 @@
 #include <criterion/details/csv_writer.hpp>
 #include <chrono>
 #include <functional>
-#include <string.h>
 #include <unordered_map>
 #include <string>
 
@@ -163,19 +162,6 @@ struct benchmark_template_registration_helper_struct {
 #define BENCHMARK_ARGUMENTS(index) \
   std::get<index>(*((T *)__benchmark_parameters));
 
-#define REGISTER_BENCHMARK(TemplateName, InstanceName, ...) \
-  \
-  namespace /* ensure internal linkage for struct */                           \
-  {                                                                            \
-  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = {__VA_ARGS__}; \
-  /* helper struct for static registration in ctor */                          \
-  struct CONCAT(_instantiation_struct_, __LINE__) {                                 \
-    CONCAT(_instantiation_struct_, __LINE__)() { /* called once before main */      \
-      criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
-    }                                                                          \
-  } CONCAT(_instantiation_struct_instance_, __LINE__);                              \
-  }
-
 #define BENCHMARK_1(Name) \
   BENCHMARK_WITHOUT_PARAMETERS(Name)
 
@@ -242,20 +228,81 @@ struct benchmark_template_registration_helper_struct {
     BENCHMARK_1(__VA_ARGS__) \
     )
 
-static inline void signal_handler(int signal) {
-  indicators::show_console_cursor(true);
-  std::cout << termcolor::reset;
-  exit(signal);
-}
-
-#define CRITERION_BENCHMARK_MAIN                                                         \
-  int main() {                                                                 \
-    std::signal(SIGTERM, signal_handler);                                      \
-    std::signal(SIGSEGV, signal_handler);                                      \
-    std::signal(SIGINT, signal_handler);                                       \
-    std::signal(SIGILL, signal_handler);                                       \
-    std::signal(SIGABRT, signal_handler);                                      \
-    std::signal(SIGFPE, signal_handler);                                       \
-    criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();                                           \
-    criterion::csv_writer::write_results("results.csv", criterion::benchmark::results); \
+#define REGISTER_BENCHMARK(TemplateName, InstanceName, ...) \
+  \
+  namespace /* ensure internal linkage for struct */                           \
+  {                                                                            \
+  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__) = {__VA_ARGS__}; \
+  /* helper struct for static registration in ctor */                          \
+  struct CONCAT(_instantiation_struct_, __LINE__) {                                 \
+    CONCAT(_instantiation_struct_, __LINE__)() { /* called once before main */      \
+      criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, InstanceName, CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__)); \
+    }                                                                          \
+  } CONCAT(_instantiation_struct_instance_, __LINE__);                              \
   }
+
+#define GET_FIRST(first, ...) first
+#define GET_REST(first, ...) __VA_ARGS__
+
+#define REGISTER_BENCHMARK_N(TemplateName, Index, PackedArgument) \
+  \
+  namespace /* ensure internal linkage for struct */                           \
+  {                                                                            \
+  static CONCAT(TemplateName, BenchmarkParameters) CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__), Index) = {GET_REST(PackedArgument)}; \
+  /* helper struct for static registration in ctor */                          \
+  struct CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index) {                                 \
+    CONCAT(CONCAT(_instantiation_struct_, __LINE__), Index)() { /* called once before main */      \
+      criterion::benchmark_template_registration_helper_struct::execute_registered_benchmark_template<CONCAT(TemplateName, BenchmarkParameters)>(#TemplateName, GET_FIRST(PackedArgument), CONCAT(CONCAT(CONCAT(TemplateName, _benchmark_template_parameters), __LINE__), Index)); \
+    }                                                                          \
+  } CONCAT(CONCAT(_instantiation_struct_instance_, __LINE__), Index);                              \
+  }
+
+
+#define _Args(...) __VA_ARGS__
+#define STRIP_PARENS(X) X
+#define PASS_PARAMETERS(X) STRIP_PARENS( _Args X )
+
+#define STRINGIZE(arg)  STRINGIZE1(arg)
+#define STRINGIZE1(arg) STRINGIZE2(arg)
+#define STRINGIZE2(arg) #arg
+
+#define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
+#define CONCATENATE1(arg1, arg2)  CONCATENATE2(arg1, arg2)
+#define CONCATENATE2(arg1, arg2)  arg1##arg2
+
+#define FOR_EACH_1(what, first, x, ...) what(1, first, x)
+#define FOR_EACH_2(what, first, x, ...)\
+  what(2, first, x);\
+  FOR_EACH_1(what, first, __VA_ARGS__);
+#define FOR_EACH_3(what, first, x, ...)\
+  what(3, first, x);\
+  FOR_EACH_2(what, first, __VA_ARGS__);
+#define FOR_EACH_4(what, first, x, ...)\
+  what(4, first, x);\
+  FOR_EACH_3(what, first, __VA_ARGS__);
+#define FOR_EACH_5(what, first, x, ...)\
+  what(5, first, x);\
+ FOR_EACH_4(what, first, __VA_ARGS__);
+#define FOR_EACH_6(what, first, x, ...)\
+  what(6, first, x);\
+  FOR_EACH_5(what, first, __VA_ARGS__);
+#define FOR_EACH_7(what, first, x, ...)\
+  what(7, first, x);\
+  FOR_EACH_6(what, first, __VA_ARGS__);
+#define FOR_EACH_8(what, first, x, ...)\
+  what(8, first, x);\
+  FOR_EACH_7(what, first, __VA_ARGS__);
+
+#define FOR_EACH_NARG(...) FOR_EACH_NARG_(__VA_ARGS__, FOR_EACH_RSEQ_N())
+#define FOR_EACH_NARG_(...) FOR_EACH_ARG_N(__VA_ARGS__) 
+#define FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N 
+#define FOR_EACH_RSEQ_N() 8, 7, 6, 5, 4, 3, 2, 1, 0
+
+#define FOR_EACH_(N, what, first, x, ...) CONCATENATE(FOR_EACH_, N)(what, first, x, __VA_ARGS__)
+#define FOR_EACH(what, first, x, ...) FOR_EACH_(FOR_EACH_NARG(x, __VA_ARGS__), what, first, x, __VA_ARGS__)
+
+#define REGISTER_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...) \
+  REGISTER_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
+
+#define REGISTER_BENCHMARK_FOR_EACH(TemplateName, ...) \
+  FOR_EACH(REGISTER_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
