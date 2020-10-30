@@ -1,6 +1,6 @@
 #include <criterion/criterion.hpp>
 
-BENCHMARK_TEMPLATE(Memcpy, size_t)
+BENCHMARK(Memcpy, size_t)
 {
   SETUP_BENCHMARK(
     const auto size = BENCHMARK_ARGUMENTS(0);
@@ -17,6 +17,6 @@ BENCHMARK_TEMPLATE(Memcpy, size_t)
   )
 }
 
-RUN_BENCHMARK_TEMPLATE(Memcpy, "/32k", 32000)
-RUN_BENCHMARK_TEMPLATE(Memcpy, "/128k", 128000)
-RUN_BENCHMARK_TEMPLATE(Memcpy, "/1M", 1000000)
+REGISTER_BENCHMARK(Memcpy, "/32k", 32000)
+REGISTER_BENCHMARK(Memcpy, "/128k", 128000)
+REGISTER_BENCHMARK(Memcpy, "/1M", 1000000)

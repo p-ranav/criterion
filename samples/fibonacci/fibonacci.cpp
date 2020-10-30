@@ -7,7 +7,7 @@ uint64_t Fibonacci(uint64_t n) {
     return Fibonacci(n - 1) + Fibonacci(n - 2);
 }
 
-BENCHMARK_TEMPLATE(Fibonacci, uint64_t)
+BENCHMARK(Fibonacci, uint64_t)
 {
   SETUP_BENCHMARK(
     const auto input = BENCHMARK_ARGUMENTS(0);
@@ -16,9 +16,9 @@ BENCHMARK_TEMPLATE(Fibonacci, uint64_t)
   [[maybe_unused]] const auto result = Fibonacci(input);
 }
 
-RUN_BENCHMARK_TEMPLATE(Fibonacci, "/19", 19)
-RUN_BENCHMARK_TEMPLATE(Fibonacci, "/20", 20)
-RUN_BENCHMARK_TEMPLATE(Fibonacci, "/21", 21)
+REGISTER_BENCHMARK(Fibonacci, "/19", 19)
+REGISTER_BENCHMARK(Fibonacci, "/20", 20)
+REGISTER_BENCHMARK(Fibonacci, "/21", 21)
 
 // Example output:
 //
