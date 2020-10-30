@@ -4,7 +4,7 @@
 BENCHMARK(VectorSort, size_t)
 {
   SETUP_BENCHMARK(
-    const auto size = BENCHMARK_ARGUMENTS(0);
+    const auto size = GET_ARGUMENT(0);
     std::vector<int> vec(size, 0);
   )
 

@@ -3,12 +3,13 @@
 BENCHMARK(Memcpy, size_t)
 {
   SETUP_BENCHMARK(
-    const auto size = BENCHMARK_ARGUMENTS(0);
+    const auto size = GET_ARGUMENT(0);
     char* src = new char[size];
     char* dst = new char[size];
     memset(src, 'x', size);
   ) 
 
+  // Code to be benchmarked
   memcpy(dst, src, size);
 
   TEARDOWN_BENCHMARK(

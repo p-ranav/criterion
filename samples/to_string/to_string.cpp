@@ -32,8 +32,8 @@ auto DoubleToStringConversionTest(int count)
 BENCHMARK(ToString, /* parameters -> */ std::function<std::vector<std::string>(int)>, int)
 {
   SETUP_BENCHMARK(
-    const auto fn = BENCHMARK_ARGUMENTS(0);
-    const auto size = BENCHMARK_ARGUMENTS(1);
+    const auto fn = GET_ARGUMENT(0);
+    const auto size = GET_ARGUMENT(1);
   )
   fn(size);
   TEARDOWN_BENCHMARK()

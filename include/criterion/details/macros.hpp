@@ -156,10 +156,10 @@ struct benchmark_template_registration_helper_struct {
           __benchmark_teardown_timestamp, \
       [[maybe_unused]] void * __benchmark_parameters)
 
-#define BENCHMARK_ARGUMENTS_TUPLE \
+#define GET_ARGUMENT_TUPLE \
   *((T *)__benchmark_parameters)
 
-#define BENCHMARK_ARGUMENTS(index) \
+#define GET_ARGUMENT(index) \
   std::get<index>(*((T *)__benchmark_parameters));
 
 #define BENCHMARK_1(Name) \

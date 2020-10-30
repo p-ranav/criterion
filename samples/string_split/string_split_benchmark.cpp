@@ -8,7 +8,7 @@ struct StringAlgorithms {
 BENCHMARK(StringSplit, std::string)
 {
   SETUP_BENCHMARK(
-    static std::string greet = BENCHMARK_ARGUMENTS(0);
+    static std::string greet = GET_ARGUMENT(0);
   )
   auto result = StringAlgorithms::split(greet, ",");
 }

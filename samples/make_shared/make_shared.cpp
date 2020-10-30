@@ -8,18 +8,10 @@ struct Foo {
   float data_3{3.1415f};
 };
 
-std::shared_ptr<Foo> Create_Foo_With_New() { 
-  return std::shared_ptr<Foo>(new Foo()); 
-}
-
-std::shared_ptr<Foo> Create_Foo_With_MakeShared() { 
-  return std::make_shared<Foo>(); 
-}
-
 BENCHMARK(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>)
 {
   SETUP_BENCHMARK(
-    auto test_function = BENCHMARK_ARGUMENTS(0);
+    auto test_function = GET_ARGUMENT(0);
   )
 
   auto foo_ptr = test_function();
@@ -29,9 +21,11 @@ BENCHMARK(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>)
   )
 }
 
-REGISTER_BENCHMARK(ConstructSharedPtr, "/new", Create_Foo_With_New)
-REGISTER_BENCHMARK(ConstructSharedPtr, "/make_shared", Create_Foo_With_MakeShared)
+// Functions to be tested
+auto Create_Foo_With_New() { return std::shared_ptr<Foo>(new Foo()); }
+auto Create_Foo_With_MakeShared() { return std::make_shared<Foo>(); }
 
-// Lamba
-// REGISTER_BENCHMARK(shared_ptr, "/new", [] { return std::shared_ptr<Foo>(new Foo()); })
-// REGISTER_BENCHMARK(shared_ptr, "/make_shared", [] { return std::make_shared<Foo>(); })
+REGISTER_BENCHMARK_FOR_EACH(ConstructSharedPtr,
+  ("/new", Create_Foo_With_New),
+  ("/make_shared", Create_Foo_With_MakeShared)
+)
