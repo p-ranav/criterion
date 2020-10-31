@@ -6,8 +6,8 @@
 
 ## Highlights
 
-* Requires compiler support for `C++17` or newer standard
 * Header-only library - single header file version available at `single_include/`
+* Requires compiler support for `C++17` or newer standard
 * Statistical analysis across multiple runs
 * Parameterized benchmarks
 
