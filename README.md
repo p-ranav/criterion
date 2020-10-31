@@ -30,12 +30,43 @@ void mergeSort(RandomAccessIterator first, RandomAccessIterator last,
 
 Simply include `criterion/criterion.hpp` and you're good to go.
 
+### Simple Benchmark
+
 * Use the `BENCHMARK` macro to declare a benchmark
-  - Benchmarks can take zero or more typed arguments
-* Use `GET_ARGUMENTS(n)` to get the nth parameter passed to the benchmark
 * Use `SETUP_BENCHMARK` and `TEARDOWN_BENCHMARK` to perform setup and teardown tasks
   - These tasks are not part of the measurement
-* For benchmarks are require arguments, use `INVOKE_BENCHMARK_FOR_EACH` and provide arguments
+
+```cpp
+#include <criterion/criterion.hpp>
+
+BENCHMARK(MergeSort)
+{
+  SETUP_BENCHMARK(
+    const auto size = 100; // vector of size 100
+    std::vector<int> vec(size, 0);
+  )
+ 
+  // Code to be benchmarked
+  mergeSort(vec.begin(), vec.end(), std::less<int>(), size);
+  
+  TEARDOWN_BENCHMARK(
+    vec.clear();
+  )
+}
+
+CRITERION_BENCHMARK_MAIN
+```
+
+```console
+foo@bar:~$ ./build/samples/merge_sort/merge_sort
+✓ MergeSort/100 7.21us ± 0.0426% (7.1us … 228us)
+```
+
+### Adding Parameters
+
+* The `BENCHMARK` macro can take typed parameters
+* Use `GET_ARGUMENTS(n)` to get the nth argument passed to the benchmark
+* For benchmarks that require arguments, use `INVOKE_BENCHMARK_FOR_EACH` and provide arguments
 
 ```cpp
 #include <criterion/criterion.hpp>
