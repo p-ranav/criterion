@@ -43,7 +43,7 @@ Include `<criterion/criterion.hpp>` and you're good to go.
 BENCHMARK(MergeSort)
 {
   SETUP_BENCHMARK(
-    const auto size = 100; // vector of size 100
+    const auto size = 100;
     std::vector<int> vec(size, 0);
   )
  
@@ -62,6 +62,8 @@ CRITERION_BENCHMARK_MAIN
 foo@bar:~$ ./build/samples/merge_sort/merge_sort
 ✓ MergeSort/100 7.21us ± 0.0426% (7.1us … 228us)
 ```
+
+The above benchmark measures performance of our merge sort implementation on a vector of size 100. What if we want to run this benchmark on a variety of sizes?
 
 ### Adding Parameters
 
