@@ -13,6 +13,17 @@
 * Header-only library - single header file version available at `single_include/`
 * MIT License
 
+## Table of Contents
+
+*    [Getting Started](#getting-started)
+     *    [Simple Benchmark](#simple-benchmark)
+     *    [Passing Arguments](#passing-arguments)
+     *    [Passing Arguments (Part 2)](#passing-arguments-part-2)
+*    [Building Library and Samples](#building-library-and-samples)
+*    [Generating Single Header](#generating-single-header)
+*    [Contributing](#contributing)
+*    [License](#license)
+
 ## Getting Started
 
 Let's say we have this merge sort implementation that needs to be benchmarked.
@@ -176,7 +187,7 @@ foo@bar:~$ ./build/samples/make_shared/make_shared
 
 The above benchmark shows that using `std::make_shared` is the way to go.
 
-## Build Library and Samples
+## Building Library and Samples
 
 ```bash
 cmake -Hall -Bbuild
