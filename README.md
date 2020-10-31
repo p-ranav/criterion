@@ -1,9 +1,10 @@
 <p align="center">
   <img height="90" src="img/logo.png"/>  
-  <p align="center">Micro-benchmarking library for modern C++</p>
 </p> 
 
 ## Highlights
+
+`Criterion` is a micro-benchmarking library for modern C++.
 
 * Convenient static registration macros for setting up benchmarks
 * Parameterized benchmarks (e.g., vary the vector size)
