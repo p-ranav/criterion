@@ -80,19 +80,19 @@ class benchmark {
     auto min_runs = 1;
 
     if (early_estimate_execution_time <= 100) { // 100ns
-      benchmark_time_ = 1e+8; // 100ms
-    }
-    else if (early_estimate_execution_time <= 1000) { // 1us
       benchmark_time_ = 5e+8; // 500ms
     }
-    else if (early_estimate_execution_time <= 100000) { // 100us
+    else if (early_estimate_execution_time <= 1000) { // 1us
       benchmark_time_ = 1e+9; // one second
     }
+    else if (early_estimate_execution_time <= 100000) { // 100us
+      benchmark_time_ = 2e+9; // two seconds
+    }
     else if (early_estimate_execution_time <= 1000000) { // 1ms
-      benchmark_time_ = 2.5e+9; // 2.5 seconds
+      benchmark_time_ = 5e+9; // 5 seconds
     }
     else if (early_estimate_execution_time <= 100000000) { // 100ms
-      benchmark_time_ = 5e+9; // 5 seconds
+      benchmark_time_ = 7.5e+9; // 7.5 seconds
     }
     else {
       benchmark_time_ = min_benchmark_time_;

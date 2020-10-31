@@ -4537,13 +4537,7 @@ public:
   }
 };
 
-} // namespace csv2
-#pragma once
-// #include <criterion/details/csv2.hpp>
-#include <iomanip>
-#include <map>
-#include <sstream>
-#include <string>
+} // namespace csv2#pragma once
 // #include <criterion/details/benchmark_result.hpp>
 #include <string>
 
@@ -4561,6 +4555,11 @@ struct benchmark_result {
 };
 
 } // namespace criterion
+// #include <criterion/details/csv2.hpp>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
 
 namespace criterion {
 
@@ -4613,8 +4612,7 @@ public:
   }
 };
 
-} // namespace criterion
-#pragma once
+} // namespace criterion#pragma once
 #include <chrono>
 #include <functional>
 #include <optional>
@@ -4638,8 +4636,7 @@ struct benchmark_config {
   benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
 };
 
-} // namespace criterion
-#pragma once
+} // namespace criterion#pragma once
 #include <string>
 
 namespace criterion {
@@ -4654,8 +4651,8 @@ struct benchmark_result {
   long double overall_best_execution_time;
   long double overall_worst_execution_time;
 };
-} // namespace criterion
-#pragma once
+
+} // namespace criterion#pragma once
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -4685,6 +4682,9 @@ class benchmark {
   std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
   std::size_t max_num_runs_{0};
+  const long double ten_seconds_{1e+10};
+  long double min_benchmark_time_{ten_seconds_};
+  long double benchmark_time_;
 
   long double estimate_minimum_measurement_cost() {
     using namespace std::chrono;
@@ -4731,18 +4731,30 @@ class benchmark {
       early_estimate_execution_time = 1;
 
     num_iterations_ = 10; // fixed
-    const auto min_runs = 10;
-    const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
-    const auto ten_seconds = 1e+10;
-    const auto two_seconds = 2e+9;
+    auto min_runs = 1;
 
-    auto max_benchmark_time = ten_seconds;
-    if (early_estimate_execution_time < 1000) { // nanoseconds
-      max_benchmark_time = two_seconds;
+    if (early_estimate_execution_time <= 100) { // 100ns
+      benchmark_time_ = 5e+8; // 500ms
+    }
+    else if (early_estimate_execution_time <= 1000) { // 1us
+      benchmark_time_ = 1e+9; // one second
+    }
+    else if (early_estimate_execution_time <= 100000) { // 100us
+      benchmark_time_ = 2e+9; // two seconds
+    }
+    else if (early_estimate_execution_time <= 1000000) { // 1ms
+      benchmark_time_ = 5e+9; // 5 seconds
+    }
+    else if (early_estimate_execution_time <= 100000000) { // 100ms
+      benchmark_time_ = 7.5e+9; // 7.5 seconds
+    }
+    else {
+      benchmark_time_ = min_benchmark_time_;
     }
 
-    const auto benchmark_time = std::max(double(min_benchmark_time), max_benchmark_time);
-    const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
+    benchmark_time_ = std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
+
+    const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
 
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
 
@@ -4769,31 +4781,18 @@ public:
   static inline std::map<std::string, benchmark_result> results;
 
   void run() {
+    std::chrono::steady_clock::time_point benchmark_start_timestamp;
 
     using namespace std::chrono;
 
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
 
-    const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
-    // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
-
-    using namespace indicators;
-
-    show_console_cursor(false);
+    const std::string benchmark_instance_name = config_.name + config_.parameterized_instance_name;
 
     // Get an early estimate for execution time
     // Update number of iterations to run for this benchmark based on estimate
     update_iterations();
-
-    ProgressBar spinner{option::PrefixText{prefix}, option::BarWidth{10}, option::Lead{"■"},
-                        option::Fill{"■"}, option::Remainder{"-"},
-                        option::ForegroundColor{Color::white},
-                        option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-                        // option::ShowSpinner{false},
-                        option::ShowElapsedTime{true}, option::ShowRemainingTime{true}};
-
-    spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
     long double best_estimate_mean = 0;
@@ -4803,12 +4802,13 @@ public:
     long double overall_worst_execution_time = 0;
 
     std::size_t num_runs = 0;
-    spinner.set_progress(num_runs);
-
     std::array<long double, 10> durations;
 
     while (true) {
       // Benchmark runs
+      if (first_run) {
+        benchmark_start_timestamp = std::chrono::steady_clock::now();
+      }
       for (std::size_t i = 0; i < num_iterations_; i++) {
         std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
         auto start = steady_clock::now();
@@ -4853,51 +4853,62 @@ public:
         }
 
         // Save best and worst duration
-        overall_best_execution_time = std::min(
-            overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
-        overall_worst_execution_time = std::max(
-            overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
+        const auto current_best_execution_time = *std::min_element(durations.begin(), durations.end());
+        if (current_best_execution_time > 0)
+          overall_best_execution_time = std::min(overall_best_execution_time, current_best_execution_time);
+
+        const auto current_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+        overall_worst_execution_time = std::max(overall_worst_execution_time, current_worst_execution_time);
       }
 
-      spinner.set_progress(num_runs);
-
-      // Show iteration as postfix text
-      // std::stringstream os;
-      // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
-      // spinner.set_option(option::PostfixText{os.str()});
-
       if (num_runs >= max_num_runs_) {
+        break;
+      }
+
+      const auto now = std::chrono::steady_clock::now();
+      const auto elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(now - benchmark_start_timestamp).count();
+      if (elapsed_time > benchmark_time_) {
         break;
       }
 
       num_runs += 1;
     }
 
-    std::cout << termcolor::bold << termcolor::green << std::setprecision(3) << "    "
-              << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
-              << " {Best: " << duration_to_string(overall_best_execution_time)
-              << ", Worst: " << duration_to_string(overall_worst_execution_time) << "}\n\n"
-              << termcolor::reset;
+    std::cout << termcolor::white << termcolor::bold
+       << "✓ " 
+       << benchmark_instance_name << " " 
+       << termcolor::green
+       << std::setprecision(3)
+       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+       << termcolor::white
+       << " (" 
+       << termcolor::cyan
+       << duration_to_string(overall_best_execution_time)
+       << " … " 
+       << termcolor::red
+       << duration_to_string(overall_worst_execution_time) 
+       << termcolor::white
+       << ")"
+       << termcolor::reset << std::endl;
 
     results.insert(std::make_pair(
-        prefix, benchmark_result{.name = config_.name + config_.parameterized_instance_name,
-                                 .num_warmup_runs = warmup_runs_,
-                                 .num_runs = max_num_runs_,
-                                 .num_iterations = num_iterations_,
-                                 .best_estimate_mean = best_estimate_mean,
-                                 .best_estimate_rsd = lowest_rsd,
-                                 .overall_best_execution_time = overall_best_execution_time,
-                                 .overall_worst_execution_time = overall_worst_execution_time}));
-
-    indicators::show_console_cursor(true);
+        benchmark_instance_name,
+        benchmark_result{.name = benchmark_instance_name,
+                          .num_warmup_runs = warmup_runs_,
+                          .num_runs = max_num_runs_,
+                          .num_iterations = num_iterations_,
+                          .best_estimate_mean = best_estimate_mean,
+                          .best_estimate_rsd = lowest_rsd,
+                          .overall_best_execution_time = overall_best_execution_time,
+                          .overall_worst_execution_time = overall_worst_execution_time}));
   }
 };
-} // namespace criterion
-#pragma once
+
+} // namespace criterion#pragma once
+#include <chrono>
 // #include <criterion/details/benchmark.hpp>
 // #include <criterion/details/benchmark_config.hpp>
 // #include <criterion/details/csv_writer.hpp>
-#include <chrono>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -4920,6 +4931,7 @@ struct benchmark_registration_helper_struct {
     }
   }
 };
+
 } // namespace criterion
 
 #define SETUP_BENCHMARK(...)                                                                       \
@@ -4970,7 +4982,7 @@ struct benchmark_template_registration_helper_struct {
   /* forward declare the benchmark function that we define later */                                \
   template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
   struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
-    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
         std::chrono::steady_clock::time_point &,                                                   \
         std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
   };                                                                                               \
@@ -5020,7 +5032,7 @@ struct benchmark_template_registration_helper_struct {
   /* forward declare the benchmark function that we define later */                                \
   template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
   struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
-    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
         std::chrono::steady_clock::time_point &,                                                   \
         std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
   };                                                                                               \
@@ -5180,43 +5192,278 @@ struct benchmark_template_registration_helper_struct {
 #define CONCATENATE1(arg1, arg2) CONCATENATE2(arg1, arg2)
 #define CONCATENATE2(arg1, arg2) arg1##arg2
 
-#define FOR_EACH_1(what, first, x, ...) what(1, first, x)
+#define FOR_EACH_1(what, first, x, ...) what(1, first, x);
+
 #define FOR_EACH_2(what, first, x, ...)                                                            \
   what(2, first, x);                                                                               \
   FOR_EACH_1(what, first, __VA_ARGS__);
+
 #define FOR_EACH_3(what, first, x, ...)                                                            \
   what(3, first, x);                                                                               \
   FOR_EACH_2(what, first, __VA_ARGS__);
+
 #define FOR_EACH_4(what, first, x, ...)                                                            \
   what(4, first, x);                                                                               \
   FOR_EACH_3(what, first, __VA_ARGS__);
+
 #define FOR_EACH_5(what, first, x, ...)                                                            \
   what(5, first, x);                                                                               \
   FOR_EACH_4(what, first, __VA_ARGS__);
+
 #define FOR_EACH_6(what, first, x, ...)                                                            \
   what(6, first, x);                                                                               \
   FOR_EACH_5(what, first, __VA_ARGS__);
+
 #define FOR_EACH_7(what, first, x, ...)                                                            \
   what(7, first, x);                                                                               \
   FOR_EACH_6(what, first, __VA_ARGS__);
+
 #define FOR_EACH_8(what, first, x, ...)                                                            \
   what(8, first, x);                                                                               \
   FOR_EACH_7(what, first, __VA_ARGS__);
 
+#define FOR_EACH_9(what, first, x, ...)                                                            \
+  what(9, first, x);                                                                               \
+  FOR_EACH_8(what, first, __VA_ARGS__);
+
+#define FOR_EACH_10(what, first, x, ...)                                                           \
+  what(10, first, x);                                                                              \
+  FOR_EACH_9(what, first, __VA_ARGS__);
+
+#define FOR_EACH_11(what, first, x, ...)                                                           \
+  what(11, first, x);                                                                              \
+  FOR_EACH_10(what, first, __VA_ARGS__);
+
+#define FOR_EACH_12(what, first, x, ...)                                                           \
+  what(12, first, x);                                                                              \
+  FOR_EACH_11(what, first, __VA_ARGS__);
+
+#define FOR_EACH_13(what, first, x, ...)                                                           \
+  what(13, first, x);                                                                              \
+  FOR_EACH_12(what, first, __VA_ARGS__);
+
+#define FOR_EACH_14(what, first, x, ...)                                                           \
+  what(14, first, x);                                                                              \
+  FOR_EACH_13(what, first, __VA_ARGS__);
+
+#define FOR_EACH_15(what, first, x, ...)                                                           \
+  what(15, first, x);                                                                              \
+  FOR_EACH_14(what, first, __VA_ARGS__);
+
+#define FOR_EACH_16(what, first, x, ...)                                                           \
+  what(16, first, x);                                                                              \
+  FOR_EACH_15(what, first, __VA_ARGS__);
+
+#define FOR_EACH_17(what, first, x, ...)                                                           \
+  what(17, first, x);                                                                              \
+  FOR_EACH_16(what, first, __VA_ARGS__);
+
+#define FOR_EACH_18(what, first, x, ...)                                                           \
+  what(18, first, x);                                                                              \
+  FOR_EACH_17(what, first, __VA_ARGS__);
+
+#define FOR_EACH_19(what, first, x, ...)                                                           \
+  what(19, first, x);                                                                              \
+  FOR_EACH_18(what, first, __VA_ARGS__);
+
+#define FOR_EACH_20(what, first, x, ...)                                                           \
+  what(20, first, x);                                                                              \
+  FOR_EACH_19(what, first, __VA_ARGS__);
+
+#define FOR_EACH_21(what, first, x, ...)                                                           \
+  what(21, first, x);                                                                              \
+  FOR_EACH_20(what, first, __VA_ARGS__);
+
+#define FOR_EACH_22(what, first, x, ...)                                                           \
+  what(22, first, x);                                                                              \
+  FOR_EACH_21(what, first, __VA_ARGS__);
+
+#define FOR_EACH_23(what, first, x, ...)                                                           \
+  what(23, first, x);                                                                              \
+  FOR_EACH_22(what, first, __VA_ARGS__);
+
+#define FOR_EACH_24(what, first, x, ...)                                                           \
+  what(24, first, x);                                                                              \
+  FOR_EACH_23(what, first, __VA_ARGS__);
+
+#define FOR_EACH_25(what, first, x, ...)                                                           \
+  what(25, first, x);                                                                              \
+  FOR_EACH_24(what, first, __VA_ARGS__);
+
+#define FOR_EACH_26(what, first, x, ...)                                                           \
+  what(26, first, x);                                                                              \
+  FOR_EACH_25(what, first, __VA_ARGS__);
+
+#define FOR_EACH_27(what, first, x, ...)                                                           \
+  what(27, first, x);                                                                              \
+  FOR_EACH_26(what, first, __VA_ARGS__);
+
+#define FOR_EACH_28(what, first, x, ...)                                                           \
+  what(28, first, x);                                                                              \
+  FOR_EACH_27(what, first, __VA_ARGS__);
+
+#define FOR_EACH_29(what, first, x, ...)                                                           \
+  what(29, first, x);                                                                              \
+  FOR_EACH_28(what, first, __VA_ARGS__);
+
+#define FOR_EACH_30(what, first, x, ...)                                                           \
+  what(30, first, x);                                                                              \
+  FOR_EACH_29(what, first, __VA_ARGS__);
+
+#define FOR_EACH_31(what, first, x, ...)                                                           \
+  what(31, first, x);                                                                              \
+  FOR_EACH_30(what, first, __VA_ARGS__);
+
+#define FOR_EACH_32(what, first, x, ...)                                                           \
+  what(32, first, x);                                                                              \
+  FOR_EACH_31(what, first, __VA_ARGS__);
+
+#define FOR_EACH_33(what, first, x, ...)                                                           \
+  what(33, first, x);                                                                              \
+  FOR_EACH_32(what, first, __VA_ARGS__);
+
+#define FOR_EACH_34(what, first, x, ...)                                                           \
+  what(34, first, x);                                                                              \
+  FOR_EACH_33(what, first, __VA_ARGS__);
+
+#define FOR_EACH_35(what, first, x, ...)                                                           \
+  what(35, first, x);                                                                              \
+  FOR_EACH_34(what, first, __VA_ARGS__);
+
+#define FOR_EACH_36(what, first, x, ...)                                                           \
+  what(36, first, x);                                                                              \
+  FOR_EACH_35(what, first, __VA_ARGS__);
+
+#define FOR_EACH_37(what, first, x, ...)                                                           \
+  what(37, first, x);                                                                              \
+  FOR_EACH_36(what, first, __VA_ARGS__);
+
+#define FOR_EACH_38(what, first, x, ...)                                                           \
+  what(38, first, x);                                                                              \
+  FOR_EACH_37(what, first, __VA_ARGS__);
+
+#define FOR_EACH_39(what, first, x, ...)                                                           \
+  what(39, first, x);                                                                              \
+  FOR_EACH_38(what, first, __VA_ARGS__);
+
+#define FOR_EACH_40(what, first, x, ...)                                                           \
+  what(40, first, x);                                                                              \
+  FOR_EACH_39(what, first, __VA_ARGS__);
+
+#define FOR_EACH_41(what, first, x, ...)                                                           \
+  what(41, first, x);                                                                              \
+  FOR_EACH_40(what, first, __VA_ARGS__);
+
+#define FOR_EACH_42(what, first, x, ...)                                                           \
+  what(42, first, x);                                                                              \
+  FOR_EACH_41(what, first, __VA_ARGS__);
+
+#define FOR_EACH_43(what, first, x, ...)                                                           \
+  what(43, first, x);                                                                              \
+  FOR_EACH_42(what, first, __VA_ARGS__);
+
+#define FOR_EACH_44(what, first, x, ...)                                                           \
+  what(44, first, x);                                                                              \
+  FOR_EACH_43(what, first, __VA_ARGS__);
+
+#define FOR_EACH_45(what, first, x, ...)                                                           \
+  what(45, first, x);                                                                              \
+  FOR_EACH_44(what, first, __VA_ARGS__);
+
+#define FOR_EACH_46(what, first, x, ...)                                                           \
+  what(46, first, x);                                                                              \
+  FOR_EACH_45(what, first, __VA_ARGS__);
+
+#define FOR_EACH_47(what, first, x, ...)                                                           \
+  what(47, first, x);                                                                              \
+  FOR_EACH_46(what, first, __VA_ARGS__);
+
+#define FOR_EACH_48(what, first, x, ...)                                                           \
+  what(48, first, x);                                                                              \
+  FOR_EACH_47(what, first, __VA_ARGS__);
+
+#define FOR_EACH_49(what, first, x, ...)                                                           \
+  what(49, first, x);                                                                              \
+  FOR_EACH_48(what, first, __VA_ARGS__);
+
+#define FOR_EACH_50(what, first, x, ...)                                                           \
+  what(50, first, x);                                                                              \
+  FOR_EACH_49(what, first, __VA_ARGS__);
+
+#define FOR_EACH_51(what, first, x, ...)                                                           \
+  what(51, first, x);                                                                              \
+  FOR_EACH_50(what, first, __VA_ARGS__);
+
+#define FOR_EACH_52(what, first, x, ...)                                                           \
+  what(52, first, x);                                                                              \
+  FOR_EACH_51(what, first, __VA_ARGS__);
+
+#define FOR_EACH_53(what, first, x, ...)                                                           \
+  what(53, first, x);                                                                              \
+  FOR_EACH_52(what, first, __VA_ARGS__);
+
+#define FOR_EACH_54(what, first, x, ...)                                                           \
+  what(54, first, x);                                                                              \
+  FOR_EACH_53(what, first, __VA_ARGS__);
+
+#define FOR_EACH_55(what, first, x, ...)                                                           \
+  what(55, first, x);                                                                              \
+  FOR_EACH_54(what, first, __VA_ARGS__);
+
+#define FOR_EACH_56(what, first, x, ...)                                                           \
+  what(56, first, x);                                                                              \
+  FOR_EACH_55(what, first, __VA_ARGS__);
+
+#define FOR_EACH_57(what, first, x, ...)                                                           \
+  what(57, first, x);                                                                              \
+  FOR_EACH_56(what, first, __VA_ARGS__);
+
+#define FOR_EACH_58(what, first, x, ...)                                                           \
+  what(58, first, x);                                                                              \
+  FOR_EACH_57(what, first, __VA_ARGS__);
+
+#define FOR_EACH_59(what, first, x, ...)                                                           \
+  what(59, first, x);                                                                              \
+  FOR_EACH_58(what, first, __VA_ARGS__);
+
+#define FOR_EACH_60(what, first, x, ...)                                                           \
+  what(60, first, x);                                                                              \
+  FOR_EACH_59(what, first, __VA_ARGS__);
+
+#define FOR_EACH_61(what, first, x, ...)                                                           \
+  what(61, first, x);                                                                              \
+  FOR_EACH_60(what, first, __VA_ARGS__);
+
+#define FOR_EACH_62(what, first, x, ...)                                                           \
+  what(62, first, x);                                                                              \
+  FOR_EACH_61(what, first, __VA_ARGS__);
+
+#define FOR_EACH_63(what, first, x, ...)                                                           \
+  what(63, first, x);                                                                              \
+  FOR_EACH_62(what, first, __VA_ARGS__);
+
 #define FOR_EACH_NARG(...) FOR_EACH_NARG_(__VA_ARGS__, FOR_EACH_RSEQ_N())
 #define FOR_EACH_NARG_(...) FOR_EACH_ARG_N(__VA_ARGS__)
-#define FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N
-#define FOR_EACH_RSEQ_N() 8, 7, 6, 5, 4, 3, 2, 1, 0
+#define FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, \
+                       _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32,  \
+                       _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47,  \
+                       _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62,  \
+                       _63, N, ...)                                                                \
+  N
+#define FOR_EACH_RSEQ_N()                                                                          \
+  63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40,  \
+      39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17,  \
+      16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
 #define FOR_EACH_(N, what, first, x, ...) CONCATENATE(FOR_EACH_, N)(what, first, x, __VA_ARGS__)
-#define FOR_EACH(what, first, x, ...)                                                              \
-  FOR_EACH_(FOR_EACH_NARG(x, __VA_ARGS__), what, first, x, __VA_ARGS__)
+#define FOR_EACH(what, first, ...)                                                              \
+  FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, first, __VA_ARGS__)
 
 #define INVOKE_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                               \
   INVOKE_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                             \
-  FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__) #pragma once
+  FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)#pragma once
 // #include <criterion/details/indicators.hpp>
 // #include <criterion/details/macros.hpp>
 
