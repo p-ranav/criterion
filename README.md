@@ -19,12 +19,12 @@ Let's say we have this merge sort implementation that needs to be benchmarked.
 
 ```cpp
 template<typename RandomAccessIterator, typename Compare>
-void mergeSort(RandomAccessIterator first, RandomAccessIterator last,
-               Compare compare, std::size_t size) {
+void merge_sort(RandomAccessIterator first, RandomAccessIterator last,
+                Compare compare, std::size_t size) {
   if (size < 2) return;
   auto middle = first + size / 2;
-  mergeSort(first, middle, compare, size / 2);
-  mergeSort(middle, last, compare, size - size/2);
+  merge_sort(first, middle, compare, size / 2);
+  merge_sort(middle, last, compare, size - size/2);
   std::inplace_merge(first, middle, last, compare);
 }
 ```
@@ -48,14 +48,14 @@ BENCHMARK(MergeSort)
   )
  
   // Code to be benchmarked
-  mergeSort(vec.begin(), vec.end(), std::less<int>(), size);
+  merge_sort(vec.begin(), vec.end(), std::less<int>(), size);
   
   TEARDOWN_BENCHMARK(
     vec.clear();
   )
 }
 
-CRITERION_BENCHMARK_MAIN
+CRITERION_BENCHMARK_MAIN()
 ```
 
 ```console
@@ -82,7 +82,7 @@ BENCHMARK(MergeSort, std::size_t) // <- one parameter to be passed to the benchm
   )
  
   // Code to be benchmarked
-  mergeSort(vec.begin(), vec.end(), std::less<int>(), size);
+  merge_sort(vec.begin(), vec.end(), std::less<int>(), size);
   
   TEARDOWN_BENCHMARK(
     vec.clear();
@@ -102,7 +102,7 @@ INVOKE_BENCHMARK_FOR_EACH(MergeSort,
   ("/100M", 100000000)
 )
 
-CRITERION_BENCHMARK_MAIN
+CRITERION_BENCHMARK_MAIN()
 ```
 
 Sample console output:
