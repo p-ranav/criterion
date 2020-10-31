@@ -550,8 +550,8 @@ struct benchmark_template_registration_helper_struct {
       16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
 #define FOR_EACH_(N, what, first, x, ...) CONCATENATE(FOR_EACH_, N)(what, first, x, __VA_ARGS__)
-#define FOR_EACH(what, first, x, ...)                                                              \
-  FOR_EACH_(FOR_EACH_NARG(x, __VA_ARGS__), what, first, x, __VA_ARGS__)
+#define FOR_EACH(what, first, ...)                                                              \
+  FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, first, __VA_ARGS__)
 
 #define REGISTER_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                               \
   REGISTER_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
