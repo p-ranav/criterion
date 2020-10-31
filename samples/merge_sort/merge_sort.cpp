@@ -10,26 +10,11 @@ void mergeSort(RandomAccessIterator first, RandomAccessIterator last,
   std::inplace_merge(first, middle, last, compare);
 }
 
-template<
-    typename RandomAccessIterator,
-    typename Compare = std::less<>
->
-void mergeSortImpl(RandomAccessIterator first, RandomAccessIterator last,
-               Compare compare={})
-{
-  std::size_t size = last - first;
-  mergeSortImpl(first, last, compare, size);
-}
-
 BENCHMARK(MergeSort, std::size_t)
 {
   SETUP_BENCHMARK(
     const auto size = GET_ARGUMENT(0);
     std::vector<int> vec(size, 0);
-    // vec.reserve(size);
-    // for (size_t i = 0; i < size; i++) {
-    //   vec.push_back(rand());
-    // }
   )
 
   mergeSort(vec.begin(), vec.end(), std::less<int>(), size);
