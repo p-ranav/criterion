@@ -65,7 +65,7 @@ foo@bar:~$ ./build/samples/merge_sort/merge_sort
 
 The above benchmark measures performance of our merge sort implementation on a vector of size 100. What if we want to run this benchmark on a variety of sizes?
 
-### Adding Parameters
+### Passing Arguments
 
 * The `BENCHMARK` macro can take typed parameters
 * Use `GET_ARGUMENTS(n)` to get the nth argument passed to the benchmark
