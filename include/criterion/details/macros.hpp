@@ -286,7 +286,7 @@ struct benchmark_template_registration_helper_struct {
 #define CONCATENATE1(arg1, arg2) CONCATENATE2(arg1, arg2)
 #define CONCATENATE2(arg1, arg2) arg1##arg2
 
-#define FOR_EACH_1(what, first, x, ...) what(1, first, x)
+#define FOR_EACH_1(what, first, x, ...) what(1, first, x);
 
 #define FOR_EACH_2(what, first, x, ...)                                                            \
   what(2, first, x);                                                                               \

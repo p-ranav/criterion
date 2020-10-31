@@ -28,6 +28,9 @@ class benchmark {
   std::size_t warmup_runs_{3};
   std::size_t num_iterations_{0};
   std::size_t max_num_runs_{0};
+  const long double ten_seconds_{1e+10};
+  long double min_benchmark_time_{ten_seconds_};
+  long double benchmark_time_;
 
   long double estimate_minimum_measurement_cost() {
     using namespace std::chrono;
@@ -74,18 +77,11 @@ class benchmark {
       early_estimate_execution_time = 1;
 
     num_iterations_ = 10; // fixed
-    const auto min_runs = 10;
-    const auto min_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
-    const auto ten_seconds = 1e+10;
-    const auto two_seconds = 2e+9;
+    const auto min_runs = 1;
+    const auto estimated_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
 
-    auto max_benchmark_time = ten_seconds;
-    if (early_estimate_execution_time < 1000) { // nanoseconds
-      max_benchmark_time = two_seconds;
-    }
-
-    const auto benchmark_time = std::max(double(min_benchmark_time), max_benchmark_time);
-    const auto total_iterations = size_t(benchmark_time) / early_estimate_execution_time;
+    benchmark_time_ = std::max(estimated_benchmark_time, min_benchmark_time_);
+    const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
 
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
 
@@ -112,31 +108,18 @@ public:
   static inline std::map<std::string, benchmark_result> results;
 
   void run() {
+    std::chrono::steady_clock::time_point benchmark_start_timestamp;
 
     using namespace std::chrono;
 
     // run empty function to estimate minimum delay in scheduling and executing user function
     const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
 
-    const std::string prefix = config_.name + config_.parameterized_instance_name + " ";
-    // std::cout << termcolor::bold << termcolor::yellow << prefix << termcolor::reset << "\n";
-
-    using namespace indicators;
-
-    show_console_cursor(false);
+    const std::string benchmark_instance_name = config_.name + config_.parameterized_instance_name;
 
     // Get an early estimate for execution time
     // Update number of iterations to run for this benchmark based on estimate
     update_iterations();
-
-    ProgressBar spinner{option::PrefixText{prefix}, option::BarWidth{10}, option::Lead{"■"},
-                        option::Fill{"■"}, option::Remainder{"-"},
-                        option::ForegroundColor{Color::white},
-                        option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-                        // option::ShowSpinner{false},
-                        option::ShowElapsedTime{true}, option::ShowRemainingTime{true}};
-
-    spinner.set_option(option::MaxProgress{max_num_runs_});
 
     long double lowest_rsd = 100;
     long double best_estimate_mean = 0;
@@ -146,12 +129,13 @@ public:
     long double overall_worst_execution_time = 0;
 
     std::size_t num_runs = 0;
-    spinner.set_progress(num_runs);
-
     std::array<long double, 10> durations;
 
     while (true) {
       // Benchmark runs
+      if (first_run) {
+        benchmark_start_timestamp = std::chrono::steady_clock::now();
+      }
       for (std::size_t i = 0; i < num_iterations_; i++) {
         std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
         auto start = steady_clock::now();
@@ -204,37 +188,46 @@ public:
         overall_worst_execution_time = std::max(overall_worst_execution_time, current_worst_execution_time);
       }
 
-      spinner.set_progress(num_runs);
-
-      // Show iteration as postfix text
-      // std::stringstream os;
-      // os << "[" << num_runs * num_iterations_ << "/" << max_num_runs_ * num_iterations_ << "]";
-      // spinner.set_option(option::PostfixText{os.str()});
-
       if (num_runs >= max_num_runs_) {
+        break;
+      }
+
+      const auto now = std::chrono::steady_clock::now();
+      const auto elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(now - benchmark_start_timestamp).count();
+      if (elapsed_time > benchmark_time_) {
         break;
       }
 
       num_runs += 1;
     }
 
-    std::cout << termcolor::bold << termcolor::green << std::setprecision(3) << "    "
-              << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
-              << " {Best: " << duration_to_string(overall_best_execution_time)
-              << ", Worst: " << duration_to_string(overall_worst_execution_time) << "}\n\n"
-              << termcolor::reset;
+    std::cout << termcolor::white << termcolor::bold
+       << "✓ " 
+       << benchmark_instance_name << " " 
+       << termcolor::green
+       << std::setprecision(3)
+       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+       << termcolor::white
+       << " (" 
+       << termcolor::cyan
+       << duration_to_string(overall_best_execution_time)
+       << " … " 
+       << termcolor::red
+       << duration_to_string(overall_worst_execution_time) 
+       << termcolor::white
+       << ")"
+       << termcolor::reset << std::endl;
 
     results.insert(std::make_pair(
-        prefix, benchmark_result{.name = config_.name + config_.parameterized_instance_name,
-                                 .num_warmup_runs = warmup_runs_,
-                                 .num_runs = max_num_runs_,
-                                 .num_iterations = num_iterations_,
-                                 .best_estimate_mean = best_estimate_mean,
-                                 .best_estimate_rsd = lowest_rsd,
-                                 .overall_best_execution_time = overall_best_execution_time,
-                                 .overall_worst_execution_time = overall_worst_execution_time}));
-
-    indicators::show_console_cursor(true);
+        benchmark_instance_name,
+        benchmark_result{.name = benchmark_instance_name,
+                          .num_warmup_runs = warmup_runs_,
+                          .num_runs = max_num_runs_,
+                          .num_iterations = num_iterations_,
+                          .best_estimate_mean = best_estimate_mean,
+                          .best_estimate_rsd = lowest_rsd,
+                          .overall_best_execution_time = overall_best_execution_time,
+                          .overall_worst_execution_time = overall_worst_execution_time}));
   }
 };
 
