@@ -7,7 +7,7 @@
 `Criterion` is a micro-benchmarking library for modern C++.
 
 * Convenient static registration macros for setting up benchmarks
-* Parameterized benchmarks (e.g., vary the vector size)
+* Parameterized benchmarks (e.g., vary input size)
 * Statistical analysis across multiple runs
 * Requires compiler support for `C++17` or newer standard
 * Header-only library - single header file version available at `single_include/`
