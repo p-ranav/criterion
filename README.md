@@ -119,7 +119,7 @@ foo@bar:~$ ./build/samples/merge_sort/merge_sort
 ✓ MergeSort/100M 9.52s ± 3.76% (9s … 10.1s)
 ```
 
-### Build Library and Samples
+## Build Library and Samples
 
 ```bash
 cmake -Hall -Bbuild
