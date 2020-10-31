@@ -6,9 +6,9 @@
 
 ## Highlights
 
-* Statistical analysis across multiple runs
 * Convenient static registration macros for setting up benchmarks
 * Parameterized benchmarks (e.g., vary the vector size)
+* Statistical analysis across multiple runs
 * Requires compiler support for `C++17` or newer standard
 * Header-only library - single header file version available at `single_include/`
 * MIT License
