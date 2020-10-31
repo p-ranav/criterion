@@ -1,12 +1,12 @@
 #include <criterion/criterion.hpp>
 
 template<typename RandomAccessIterator, typename Compare>
-void mergeSort(RandomAccessIterator first, RandomAccessIterator last,
-               Compare compare, std::size_t size) {
+void merge_sort(RandomAccessIterator first, RandomAccessIterator last,
+                Compare compare, std::size_t size) {
   if (size < 2) return;
   auto middle = first + size / 2;
-  mergeSort(first, middle, compare, size / 2);
-  mergeSort(middle, last, compare, size - size/2);
+  merge_sort(first, middle, compare, size / 2);
+  merge_sort(middle, last, compare, size - size/2);
   std::inplace_merge(first, middle, last, compare);
 }
 
@@ -17,7 +17,7 @@ BENCHMARK(MergeSort, std::size_t)
     std::vector<int> vec(size, 0);
   )
 
-  mergeSort(vec.begin(), vec.end(), std::less<int>(), size);
+  merge_sort(vec.begin(), vec.end(), std::less<int>(), size);
 }
 
 INVOKE_BENCHMARK_FOR_EACH(MergeSort,

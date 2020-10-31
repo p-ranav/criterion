@@ -5473,7 +5473,7 @@ static inline void signal_handler(int signal) {
   exit(signal);
 }
 
-#define CRITERION_BENCHMARK_MAIN                                                                   \
+#define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main() {                                                                                     \
     std::signal(SIGTERM, signal_handler);                                                          \
     std::signal(SIGSEGV, signal_handler);                                                          \
