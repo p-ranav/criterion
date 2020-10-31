@@ -85,3 +85,25 @@ foo@bar:~$ ./build/samples/merge_sort/merge_sort
 ✓ MergeSort/10M 891ms ± 3.54% (847ms … 1.02s)
 ✓ MergeSort/100M 9.52s ± 3.76% (9s … 10.1s)
 ```
+
+### Build Library and Samples
+
+```bash
+cmake -Hall -Bbuild
+cmake --build build
+
+# run `merge_sort` sample
+./build/samples/merge_sort/merge_sort
+```
+
+## Generating Single Header
+
+```bash
+python3 utils/amalgamate/amalgamate.py -c single_include.json -s .
+```
+
+## Contributing
+Contributions are welcome, have a look at the [CONTRIBUTING.md](CONTRIBUTING.md) document for more information.
+
+## License
+The project is available under the [MIT](https://opensource.org/licenses/MIT) license.
