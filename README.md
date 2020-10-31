@@ -119,6 +119,51 @@ foo@bar:~$ ./build/samples/merge_sort/merge_sort
 ✓ MergeSort/100M 9.52s ± 3.76% (9s … 10.1s)
 ```
 
+### Passing Arguments (Part 2)
+
+`Criterion` allows for passing arguments like `std::function`. This allows for benchmarking and comparison of implementations. Here's an example that compares using `new` vs `make_shared`:
+
+```cpp
+struct Foo {
+  std::string data_1{"1234567891012131415161718192021"};
+  int data_2{5};
+  float data_3{3.1415f};
+};
+
+BENCHMARK(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>) 
+{
+  SETUP_BENCHMARK(
+    auto test_function = GET_ARGUMENT(0);
+  )
+
+  // Code being benchmarked
+  auto foo_ptr = test_function();
+
+  TEARDOWN_BENCHMARK(
+    foo_ptr.reset();
+  )
+}
+
+// Functions to be tested
+auto Create_Foo_With_New() { return std::shared_ptr<Foo>(new Foo()); }
+auto Create_Foo_With_MakeShared() { return std::make_shared<Foo>(); }
+
+INVOKE_BENCHMARK_FOR_EACH(ConstructSharedPtr, 
+  ("/new", Create_Foo_With_New),
+  ("/make_shared", Create_Foo_With_MakeShared)
+)
+
+CRITERION_BENCHMARK_MAIN()
+```
+
+```console
+foo@bar:~$ ./build/samples/make_shared/make_shared
+✓ ConstructSharedPtr/new 103ns ± 0.474% (94ns … 62.5us)
+✓ ConstructSharedPtr/make_shared 74ns ± 0% (71ns … 67us)
+```
+
+The above benchmark shows that using `make_shared` provides better performance compared to constructing with `new`
+
 ## Build Library and Samples
 
 ```bash
