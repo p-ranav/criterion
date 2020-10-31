@@ -29,9 +29,9 @@ void mergeSort(RandomAccessIterator first, RandomAccessIterator last,
 }
 ```
 
-Simply include `criterion/criterion.hpp` and you're good to go.
-
 ### Simple Benchmark
+
+Include `<criterion/criterion.hpp>` and you're good to go.
 
 * Use the `BENCHMARK` macro to declare a benchmark
 * Use `SETUP_BENCHMARK` and `TEARDOWN_BENCHMARK` to perform setup and teardown tasks
