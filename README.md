@@ -1,8 +1,7 @@
 <p align="center">
   <img height="90" src="img/logo.png"/>  
-</p>
-
-`Criterion` is a micro-benchmarking library for modern C++. 
+  <p align="center">Micro-benchmarking library for modern C++</p>
+</p> 
 
 ## Highlights
 
