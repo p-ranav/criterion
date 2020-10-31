@@ -121,7 +121,9 @@ foo@bar:~$ ./build/samples/merge_sort/merge_sort
 
 ### Passing Arguments (Part 2)
 
-`Criterion` allows for passing arguments like `std::function`. This allows for benchmarking and comparison of implementations. Here's an example that compares using `new` vs `make_shared`:
+`Criterion` allows for passing arguments like `std::function`. This allows for benchmarking and comparison of implementations. 
+
+Let's say we have the following struct and we need to create a `std::shared_ptr` to it.
 
 ```cpp
 struct Foo {
@@ -129,7 +131,24 @@ struct Foo {
   int data_2{5};
   float data_3{3.1415f};
 };
+```
 
+Here are two implementations for constructing the `std::shared_ptr`:
+
+```cpp
+// Functions to be tested
+auto Create_Foo_With_New() { 
+  return std::shared_ptr<Foo>(new Foo()); 
+}
+
+auto Create_Foo_With_MakeShared() { 
+  return std::make_shared<Foo>(); 
+}
+```
+
+We can setup a single benchmark that takes a `std::function<>` and measures performance like below.
+
+```cpp
 BENCHMARK(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>) 
 {
   SETUP_BENCHMARK(
@@ -144,10 +163,6 @@ BENCHMARK(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>)
   )
 }
 
-// Functions to be tested
-auto Create_Foo_With_New() { return std::shared_ptr<Foo>(new Foo()); }
-auto Create_Foo_With_MakeShared() { return std::make_shared<Foo>(); }
-
 INVOKE_BENCHMARK_FOR_EACH(ConstructSharedPtr, 
   ("/new", Create_Foo_With_New),
   ("/make_shared", Create_Foo_With_MakeShared)
@@ -158,11 +173,11 @@ CRITERION_BENCHMARK_MAIN()
 
 ```console
 foo@bar:~$ ./build/samples/make_shared/make_shared
-✓ ConstructSharedPtr/new 103ns ± 0.474% (94ns … 62.5us)
-✓ ConstructSharedPtr/make_shared 74ns ± 0% (71ns … 67us)
+✓ ConstructSharedPtr/new 104ns ± 0.288% (96ns … 114us)
+✓ ConstructSharedPtr/make_shared 77ns ± 0% (70ns … 82.3us)
 ```
 
-The above benchmark shows that using `make_shared` provides better performance compared to constructing with `new`
+The above benchmark shows that using `std::make_shared` is the way to go.
 
 ## Build Library and Samples
 
