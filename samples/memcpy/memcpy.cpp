@@ -18,7 +18,7 @@ BENCHMARK(Memcpy, size_t)
   )
 }
 
-REGISTER_BENCHMARK_FOR_EACH(Memcpy, 
+INVOKE_BENCHMARK_FOR_EACH(Memcpy, 
   ("/32k", 32000), 
   ("/128k", 128000), 
   ("/1M", 1000000)

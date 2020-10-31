@@ -37,7 +37,7 @@ BENCHMARK(ToString, /* parameters -> */ std::function<std::vector<std::string>(i
   fn(size);
 }
 
-REGISTER_BENCHMARK_FOR_EACH(ToString, 
+INVOKE_BENCHMARK_FOR_EACH(ToString, 
   ("/int/10", IntToStringConversionTest, 10),
   ("/int/1000", IntToStringConversionTest, 1000),
   ("/double/10", DoubleToStringConversionTest, 10),

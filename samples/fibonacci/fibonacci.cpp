@@ -16,7 +16,7 @@ BENCHMARK(Fibonacci, uint64_t)
   [[maybe_unused]] const auto result = Fibonacci(input);
 }
 
-REGISTER_BENCHMARK_FOR_EACH(Fibonacci, 
+INVOKE_BENCHMARK_FOR_EACH(Fibonacci, 
   ("/19", 19), 
   ("/20", 20), 
   ("/21", 21)

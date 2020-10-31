@@ -20,7 +20,7 @@ BENCHMARK(MergeSort, std::size_t)
   mergeSort(vec.begin(), vec.end(), std::less<int>(), size);
 }
 
-REGISTER_BENCHMARK_FOR_EACH(MergeSort,
+INVOKE_BENCHMARK_FOR_EACH(MergeSort,
   ("/10", 10),
   ("/100", 100),
   ("/1000", 1000),

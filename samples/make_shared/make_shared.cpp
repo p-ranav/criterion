@@ -25,7 +25,7 @@ BENCHMARK(ConstructSharedPtr, std::function<std::shared_ptr<Foo>()>)
 auto Create_Foo_With_New() { return std::shared_ptr<Foo>(new Foo()); }
 auto Create_Foo_With_MakeShared() { return std::make_shared<Foo>(); }
 
-REGISTER_BENCHMARK_FOR_EACH(ConstructSharedPtr, 
+INVOKE_BENCHMARK_FOR_EACH(ConstructSharedPtr, 
   ("/new", Create_Foo_With_New),
   ("/make_shared", Create_Foo_With_MakeShared)
 )

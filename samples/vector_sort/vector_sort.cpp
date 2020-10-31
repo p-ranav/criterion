@@ -15,9 +15,9 @@ BENCHMARK(VectorSort, size_t) {
   )
 }
 
-// REGISTER_BENCHMARK(VectorSort, "/1000", 1000)
+// INVOKE_BENCHMARK(VectorSort, "/1000", 1000)
 
-REGISTER_BENCHMARK_FOR_EACH(VectorSort, 
+INVOKE_BENCHMARK_FOR_EACH(VectorSort, 
   ("/10", 10), 
   ("/100", 100), 
   ("/1000", 1000),

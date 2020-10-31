@@ -233,7 +233,7 @@ struct benchmark_template_registration_helper_struct {
               BENCHMARK_4(__VA_ARGS__), BENCHMARK_3(__VA_ARGS__), BENCHMARK_2(__VA_ARGS__),        \
               BENCHMARK_1(__VA_ARGS__))
 
-#define REGISTER_BENCHMARK(TemplateName, InstanceName, ...)                                        \
+#define INVOKE_BENCHMARK(TemplateName, InstanceName, ...)                                        \
                                                                                                    \
   namespace /* ensure internal linkage for struct */                                               \
   {                                                                                                \
@@ -254,7 +254,7 @@ struct benchmark_template_registration_helper_struct {
 #define GET_FIRST(first, ...) first
 #define GET_REST(first, ...) __VA_ARGS__
 
-#define REGISTER_BENCHMARK_N(TemplateName, Index, PackedArgument)                                  \
+#define INVOKE_BENCHMARK_N(TemplateName, Index, PackedArgument)                                  \
                                                                                                    \
   namespace /* ensure internal linkage for struct */                                               \
   {                                                                                                \
@@ -553,8 +553,8 @@ struct benchmark_template_registration_helper_struct {
 #define FOR_EACH(what, first, ...)                                                              \
   FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, first, __VA_ARGS__)
 
-#define REGISTER_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                               \
-  REGISTER_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
+#define INVOKE_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                               \
+  INVOKE_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
 
-#define REGISTER_BENCHMARK_FOR_EACH(TemplateName, ...)                                             \
-  FOR_EACH(REGISTER_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
+#define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                             \
+  FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)

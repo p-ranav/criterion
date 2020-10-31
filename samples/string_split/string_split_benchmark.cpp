@@ -12,5 +12,5 @@ BENCHMARK(StringSplit, std::string)
   )
   auto result = StringAlgorithms::split(greet, ",");
 }
-REGISTER_BENCHMARK(StringSplit, 
+INVOKE_BENCHMARK(StringSplit, 
   "/csv", "Year,Make,Model,Description,Price\n1997,Ford,E350,\"ac, abs, moon\",3000.00")
