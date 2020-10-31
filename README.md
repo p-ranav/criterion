@@ -60,7 +60,7 @@ CRITERION_BENCHMARK_MAIN()
 
 ```console
 foo@bar:~$ ./build/samples/merge_sort/merge_sort
-✓ MergeSort/100 7.21us ± 0.0426% (7.1us … 228us)
+✓ MergeSort/100 7.68us ± 0.0727% (7.54us … 117us)
 ```
 
 The above benchmark measures performance of our merge sort implementation on a vector of size 100. What if we want to run this benchmark on a variety of sizes?
