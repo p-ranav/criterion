@@ -77,10 +77,29 @@ class benchmark {
       early_estimate_execution_time = 1;
 
     num_iterations_ = 10; // fixed
-    const auto min_runs = 1;
-    const auto estimated_benchmark_time = early_estimate_execution_time * min_runs * num_iterations_;
+    auto min_runs = 1;
 
-    benchmark_time_ = std::max(estimated_benchmark_time, min_benchmark_time_);
+    if (early_estimate_execution_time <= 100) { // 100ns
+      benchmark_time_ = 1e+8; // 100ms
+    }
+    else if (early_estimate_execution_time <= 1000) { // 1us
+      benchmark_time_ = 5e+8; // 500ms
+    }
+    else if (early_estimate_execution_time <= 100000) { // 100us
+      benchmark_time_ = 1e+9; // one second
+    }
+    else if (early_estimate_execution_time <= 1000000) { // 1ms
+      benchmark_time_ = 2.5e+9; // 2.5 seconds
+    }
+    else if (early_estimate_execution_time <= 100000000) { // 100ms
+      benchmark_time_ = 5e+9; // 5 seconds
+    }
+    else {
+      benchmark_time_ = min_benchmark_time_;
+    }
+
+    benchmark_time_ = std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
+
     const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
 
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
