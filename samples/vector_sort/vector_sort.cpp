@@ -18,7 +18,8 @@ BENCHMARK(VectorSort, size_t) {
 REGISTER_BENCHMARK_FOR_EACH(VectorSort, 
   ("/10", 10), 
   ("/100", 100), 
-  ("/1000", 1000)
+  ("/1000", 1000),
+  ("/10000", 10000)
 )
 
 // vector_sort/10

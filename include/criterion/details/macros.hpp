@@ -76,7 +76,7 @@ struct benchmark_template_registration_helper_struct {
   /* forward declare the benchmark function that we define later */                                \
   template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
   struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
-    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
         std::chrono::steady_clock::time_point &,                                                   \
         std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
   };                                                                                               \
@@ -126,7 +126,7 @@ struct benchmark_template_registration_helper_struct {
   /* forward declare the benchmark function that we define later */                                \
   template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
   struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
-    static void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
         std::chrono::steady_clock::time_point &,                                                   \
         std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
   };                                                                                               \

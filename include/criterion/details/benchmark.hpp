@@ -196,10 +196,12 @@ public:
         }
 
         // Save best and worst duration
-        overall_best_execution_time = std::min(
-            overall_best_execution_time, *std::min_element(durations.begin(), durations.end()));
-        overall_worst_execution_time = std::max(
-            overall_worst_execution_time, *std::min_element(durations.begin(), durations.end()));
+        const auto current_best_execution_time = *std::min_element(durations.begin(), durations.end());
+        if (current_best_execution_time > 0)
+          overall_best_execution_time = std::min(overall_best_execution_time, current_best_execution_time);
+
+        const auto current_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+        overall_worst_execution_time = std::max(overall_worst_execution_time, current_worst_execution_time);
       }
 
       spinner.set_progress(num_runs);
