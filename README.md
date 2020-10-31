@@ -13,7 +13,7 @@
 * Header-only library - single header file version available at `single_include/`
 * MIT License
 
-## Quick Start
+## Getting Started
 
 Let's say we have this merge sort implementation that needs to be benchmarked.
 
