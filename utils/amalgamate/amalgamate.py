@@ -92,7 +92,7 @@ class Amalgamation(object):
             # actual_path = self.actual_path(file_path)
             print(" - processing \"{0}\"".format(file_path))
             t = TranslationUnit(file_path, self, True)
-            amalgamation += t.content
+            amalgamation += t.content + "\n\n"
 
         with open(self.target, 'w') as f:
             f.write(amalgamation)
