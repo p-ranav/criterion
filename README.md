@@ -246,7 +246,7 @@ foo@bar:~$ cat results.json
       "warmup_runs": 3,
       "benchmark_runs": 333333,
       "iterations_per_run": 10,
-      "best_estimate_mean": 3,
+      "best_estimate_mean_execution_time": 3,
       "best_estimate_rsd": 0.00,
       "overall_best_execution_time": 1,
       "overall_worst_execution_time": 39317
@@ -256,7 +256,7 @@ foo@bar:~$ cat results.json
       "warmup_runs": 3,
       "benchmark_runs": 303030,
       "iterations_per_run": 10,
-      "best_estimate_mean": 82,
+      "best_estimate_mean_execution_time": 82,
       "best_estimate_rsd": 3.80,
       "overall_best_execution_time": 74,
       "overall_worst_execution_time": 63922
@@ -266,7 +266,7 @@ foo@bar:~$ cat results.json
       "warmup_runs": 3,
       "benchmark_runs": 116550,
       "iterations_per_run": 10,
-      "best_estimate_mean": 653,
+      "best_estimate_mean_execution_time": 653,
       "best_estimate_rsd": 0.77,
       "overall_best_execution_time": 641,
       "overall_worst_execution_time": 1732148
@@ -276,7 +276,7 @@ foo@bar:~$ cat results.json
       "warmup_runs": 3,
       "benchmark_runs": 25464,
       "iterations_per_run": 10,
-      "best_estimate_mean": 6296,
+      "best_estimate_mean_execution_time": 6296,
       "best_estimate_rsd": 0.11,
       "overall_best_execution_time": 6275,
       "overall_worst_execution_time": 82021
