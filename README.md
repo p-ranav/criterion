@@ -19,6 +19,7 @@
      *    [Simple Benchmark](#simple-benchmark)
      *    [Passing Arguments](#passing-arguments)
      *    [Passing Arguments (Part 2)](#passing-arguments-part-2)
+     *    [Exporting Results](#exporting-results)
 *    [Building Library and Samples](#building-library-and-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
@@ -186,6 +187,94 @@ foo@bar:~$ ./build/samples/make_shared/make_shared
 ```
 
 The above benchmark shows that using `std::make_shared` is the way to go.
+
+### Exporting Results (csv, json, etc.)
+
+Benchmarks can be exported to a number of formats: `.csv`, `.json`, '.md`, and `.asciidoc`.
+
+```console
+foo@bar:~$ ./vector_sort --help
+
+NAME
+     criterion -- Run Criterion benchmarks
+
+SYNOPSIS
+     criterion [-e,--export_results {csv,json,md,asciidoc} <filename>]
+
+DESCRIPTION
+     The criterion microbenchmarking utility repeatedly executes a list of registered functions,
+     statistically analyzing the temporal behavior of code
+
+     The options are as follows:
+
+     -e,--export_results format filename
+          Export benchmark results to file. The following are the supported formats.
+
+          csv       Comma separated values (CSV) delimited text file
+          json      JavaScript Object Notation (JSON) text file
+          md        Markdown (md) text file
+          asciidoc  AsciiDoc (asciidoc) text file
+
+     -h,--help
+          Print this help message
+
+```
+
+Use `--export_results` (or `-e`) to export results to one of the supported formats.
+
+```console
+foo@bar:~$ ./vector_sort --export_results json results.json
+✓ VectorSort/10 3ns ± 0% (1ns … 39.3us)
+✓ VectorSort/100 82.2ns ± 3.8% (74ns … 63.9us)
+✓ VectorSort/1000 653ns ± 0.766% (641ns … 1.73ms)
+✓ VectorSort/10000 6.3us ± 0.111% (6.28us … 82us)
+
+foo@bar:~$ cat results.json
+{
+  "benchmarks": [
+    {
+      "name": "VectorSort/10",
+      "warmup_runs": 3,
+      "benchmark_runs": 333333,
+      "iterations_per_run": 10,
+      "best_estimate_mean": 3,
+      "best_estimate_rsd": 0.00,
+      "overall_best_execution_time": 1,
+      "overall_worst_execution_time": 39317
+    },
+    {
+      "name": "VectorSort/100",
+      "warmup_runs": 3,
+      "benchmark_runs": 303030,
+      "iterations_per_run": 10,
+      "best_estimate_mean": 82,
+      "best_estimate_rsd": 3.80,
+      "overall_best_execution_time": 74,
+      "overall_worst_execution_time": 63922
+    },
+    {
+      "name": "VectorSort/1000",
+      "warmup_runs": 3,
+      "benchmark_runs": 116550,
+      "iterations_per_run": 10,
+      "best_estimate_mean": 653,
+      "best_estimate_rsd": 0.77,
+      "overall_best_execution_time": 641,
+      "overall_worst_execution_time": 1732148
+    },
+    {
+      "name": "VectorSort/10000",
+      "warmup_runs": 3,
+      "benchmark_runs": 25464,
+      "iterations_per_run": 10,
+      "best_estimate_mean": 6296,
+      "best_estimate_rsd": 0.11,
+      "overall_best_execution_time": 6275,
+      "overall_worst_execution_time": 82021
+    }
+  ]
+}
+```
 
 ## Building Library and Samples
 
