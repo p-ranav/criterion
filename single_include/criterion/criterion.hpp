@@ -2684,6 +2684,20 @@ struct benchmark_result {
   long double overall_best_execution_time;
   long double overall_worst_execution_time;
 
+  static std::string duration_to_string(const long double &ns) {
+    std::stringstream os;
+    if (ns < 1E3) {
+      os << std::setprecision(3) << ns << "ns";
+    } else if (ns < 1E6) {
+      os << std::setprecision(3) << (ns / 1E3) << "us";
+    } else if (ns < 1E9) {
+      os << std::setprecision(3) << (ns / 1E6) << "ms";
+    } else {
+      os << std::setprecision(3) << (ns / 1E9) << "s";
+    }
+    return os.str();
+  }
+
   static std::string csv_header() {
     return "name,warmup_runs,benchmark_runs,iterations_per_run,best_estimate_mean,best_estimate_rsd,overall_best_execution_time,overall_worst_execution_time";
   }
@@ -2727,13 +2741,26 @@ struct benchmark_result {
 
     return os.str();
   }
+
+  std::string to_md() const {
+    std::stringstream os;
+    os << "|" << name;
+    os << "|" << num_warmup_runs;
+    os << "|" << num_runs;
+    os << "|" << num_iterations;
+    os << "|" << duration_to_string(best_estimate_mean);
+    os << "|" << best_estimate_rsd << "%";
+    os << "|" << duration_to_string(overall_best_execution_time);
+    os << "|" << duration_to_string(overall_worst_execution_time);
+    return os.str();
+  }
 };
 
 } // namespace criterion#pragma once
 // #include <criterion/details/benchmark_result.hpp>
 #include <iomanip>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <string>
 
@@ -2761,7 +2788,7 @@ public:
 // #include <criterion/details/benchmark_result.hpp>
 #include <iomanip>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <string>
 
@@ -2790,6 +2817,38 @@ public:
       os << "\n";
       os << "  ]\n";
       os << "}";
+      result = true;
+    }
+    os.close();
+    return result;
+  }
+};
+
+} // namespace criterion#pragma once
+// #include <criterion/details/benchmark_result.hpp>
+#include <iomanip>
+#include <fstream>
+#include <unordered_map>
+#include <sstream>
+#include <string>
+
+namespace criterion {
+
+class md_writer {
+public:
+  static bool write_results(const std::string &filename,
+                            const std::unordered_map<std::string, benchmark_result> &results) {
+    bool result{false};
+    std::ofstream os(filename);
+    if (os.is_open()) {
+
+      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean | Best Estimate RSD (%) | Overall Best Execution Time | Overall Worst Execution Time |\n";
+      os << "|------|------------:|---------------:|----------------------:|-------------------:|----------------------:|----------------------------:|-----------------------------:|\n";
+
+      for (const auto &kvpair : results) {
+        os << kvpair.second.to_md();
+        os << "\n";
+      }
       result = true;
     }
     os.close();
@@ -2906,20 +2965,6 @@ class benchmark {
     max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
-  std::string duration_to_string(const long double &ns) {
-    std::stringstream os;
-    if (ns < 1E3) {
-      os << std::setprecision(3) << ns << "ns";
-    } else if (ns < 1E6) {
-      os << std::setprecision(3) << (ns / 1E3) << "us";
-    } else if (ns < 1E9) {
-      os << std::setprecision(3) << (ns / 1E6) << "ms";
-    } else {
-      os << std::setprecision(3) << (ns / 1E9) << "s";
-    }
-    return os.str();
-  }
-
 public:
   benchmark(const benchmark_config &config) : config_(config) {}
 
@@ -3024,14 +3069,14 @@ public:
        << benchmark_instance_name << " " 
        << termcolor::green
        << std::setprecision(3)
-       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+       << benchmark_result::duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
        << termcolor::white
        << " (" 
        << termcolor::cyan
-       << duration_to_string(overall_best_execution_time)
+       << benchmark_result::duration_to_string(overall_best_execution_time)
        << " … " 
        << termcolor::red
-       << duration_to_string(overall_worst_execution_time) 
+       << benchmark_result::duration_to_string(overall_worst_execution_time) 
        << termcolor::white
        << ")"
        << termcolor::reset << std::endl;
@@ -6678,8 +6723,8 @@ static inline void print_criterion_help() {
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
   std::cout << termcolor::bold << "     criterion " << termcolor::reset 
-            << "[" << termcolor::bold << "--export_results" << termcolor::reset 
-            << " {csv,json} <filename>]\n";
+            << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset 
+            << " {csv,json,md} <filename>]\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
   std::cout << "     The " << termcolor::bold << "criterion" << termcolor::reset 
@@ -6687,7 +6732,7 @@ static inline void print_criterion_help() {
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --export_results " << termcolor::reset 
+  std::cout << termcolor::bold << "     -e,--export_results " << termcolor::reset 
             << termcolor::underline << "format" << termcolor::reset
             << " "
             << termcolor::underline << "filename" << termcolor::reset << "\n";
@@ -6695,8 +6740,9 @@ static inline void print_criterion_help() {
   std::cout << "\n";
   std::cout << "          " << termcolor::bold << "csv" << termcolor::reset << "       Comma separated values (CSV) delimited text file\n";
   std::cout << "          " << termcolor::bold << "json" << termcolor::reset << "      JavaScript Object Notation (JSON) text file\n";
+  std::cout << "          " << termcolor::bold << "md" << termcolor::reset << "        Markdown (md) text file\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --help " << termcolor::reset << "\n";
+  std::cout << termcolor::bold << "     -h,--help " << termcolor::reset << "\n";
   std::cout << "          Print this help message\n";
 } #pragma once
 // #include <criterion/details/indicators.hpp>
@@ -6705,6 +6751,7 @@ static inline void print_criterion_help() {
 // #include <criterion/details/help.hpp>
 // #include <criterion/details/csv_writer.hpp>
 // #include <criterion/details/json_writer.hpp>
+// #include <criterion/details/md_writer.hpp>
 
 static inline void signal_handler(int signal) {
   indicators::show_console_cursor(true);
@@ -6717,7 +6764,7 @@ namespace criterion {
 struct options {
 
   struct export_options : structopt::sub_command {
-    enum class format_type { csv, json };
+    enum class format_type { csv, json, md };
 
     // Export format
     format_type format;
@@ -6782,6 +6829,10 @@ static inline int criterion_main(int argc, char *argv[]) {
       else if (export_options.format == criterion::options::export_options::format_type::json) {
         // JSON export
         criterion::json_writer::write_results(export_options.filename, criterion::benchmark::results);
+      }
+      else if (export_options.format == criterion::options::export_options::format_type::md) {
+        // Markdown export
+        criterion::md_writer::write_results(export_options.filename, criterion::benchmark::results);
       }
     }
 

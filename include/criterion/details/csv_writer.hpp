@@ -2,7 +2,7 @@
 #include <criterion/details/benchmark_result.hpp>
 #include <iomanip>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <string>
 

@@ -5,6 +5,7 @@
 #include <criterion/details/help.hpp>
 #include <criterion/details/csv_writer.hpp>
 #include <criterion/details/json_writer.hpp>
+#include <criterion/details/md_writer.hpp>
 
 static inline void signal_handler(int signal) {
   indicators::show_console_cursor(true);
@@ -17,7 +18,7 @@ namespace criterion {
 struct options {
 
   struct export_options : structopt::sub_command {
-    enum class format_type { csv, json };
+    enum class format_type { csv, json, md };
 
     // Export format
     format_type format;
@@ -82,6 +83,10 @@ static inline int criterion_main(int argc, char *argv[]) {
       else if (export_options.format == criterion::options::export_options::format_type::json) {
         // JSON export
         criterion::json_writer::write_results(export_options.filename, criterion::benchmark::results);
+      }
+      else if (export_options.format == criterion::options::export_options::format_type::md) {
+        // Markdown export
+        criterion::md_writer::write_results(export_options.filename, criterion::benchmark::results);
       }
     }
 

@@ -107,20 +107,6 @@ class benchmark {
     max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
-  std::string duration_to_string(const long double &ns) {
-    std::stringstream os;
-    if (ns < 1E3) {
-      os << std::setprecision(3) << ns << "ns";
-    } else if (ns < 1E6) {
-      os << std::setprecision(3) << (ns / 1E3) << "us";
-    } else if (ns < 1E9) {
-      os << std::setprecision(3) << (ns / 1E6) << "ms";
-    } else {
-      os << std::setprecision(3) << (ns / 1E9) << "s";
-    }
-    return os.str();
-  }
-
 public:
   benchmark(const benchmark_config &config) : config_(config) {}
 
@@ -225,14 +211,14 @@ public:
        << benchmark_instance_name << " " 
        << termcolor::green
        << std::setprecision(3)
-       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+       << benchmark_result::duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
        << termcolor::white
        << " (" 
        << termcolor::cyan
-       << duration_to_string(overall_best_execution_time)
+       << benchmark_result::duration_to_string(overall_best_execution_time)
        << " … " 
        << termcolor::red
-       << duration_to_string(overall_worst_execution_time) 
+       << benchmark_result::duration_to_string(overall_worst_execution_time) 
        << termcolor::white
        << ")"
        << termcolor::reset << std::endl;
