@@ -107,10 +107,25 @@ class benchmark {
     max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
+  static std::string duration_to_string(const long double &ns) {
+    std::stringstream os;
+    if (ns < 1E3) {
+      os << std::setprecision(3) << ns << "ns";
+    } else if (ns < 1E6) {
+      os << std::setprecision(3) << (ns / 1E3) << "us";
+    } else if (ns < 1E9) {
+      os << std::setprecision(3) << (ns / 1E6) << "ms";
+    } else {
+      os << std::setprecision(3) << (ns / 1E9) << "s";
+    }
+    return os.str();
+  }
+
 public:
   benchmark(const benchmark_config &config) : config_(config) {}
 
   static inline std::unordered_map<std::string, benchmark_result> results;
+  static inline std::vector<std::string> benchmark_execution_order;
 
   void run() {
     std::chrono::steady_clock::time_point benchmark_start_timestamp;
@@ -121,6 +136,7 @@ public:
     const auto estimated_minimum_measurement_cost = estimate_minimum_measurement_cost();
 
     const std::string benchmark_instance_name = config_.name + config_.parameterized_instance_name;
+    benchmark_execution_order.push_back(benchmark_instance_name);
 
     // Get an early estimate for execution time
     // Update number of iterations to run for this benchmark based on estimate
@@ -211,14 +227,14 @@ public:
        << benchmark_instance_name << " " 
        << termcolor::green
        << std::setprecision(3)
-       << benchmark_result::duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
+       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
        << termcolor::white
        << " (" 
        << termcolor::cyan
-       << benchmark_result::duration_to_string(overall_best_execution_time)
+       << duration_to_string(overall_best_execution_time)
        << " … " 
        << termcolor::red
-       << benchmark_result::duration_to_string(overall_worst_execution_time) 
+       << duration_to_string(overall_worst_execution_time) 
        << termcolor::white
        << ")"
        << termcolor::reset << std::endl;

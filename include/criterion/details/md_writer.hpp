@@ -1,5 +1,6 @@
 #pragma once
 #include <criterion/details/benchmark_result.hpp>
+#include <criterion/details/benchmark.hpp>
 #include <iomanip>
 #include <fstream>
 #include <unordered_map>
@@ -19,8 +20,9 @@ public:
       os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
       os << "|------|------------:|---------------:|----------------------:|------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
 
-      for (const auto &kvpair : results) {
-        os << kvpair.second.to_md();
+      for (const auto &name : benchmark::benchmark_execution_order) {
+        const auto& this_result = results.at(name);
+        os << this_result.to_md();
         os << "\n";
       }
       result = true;

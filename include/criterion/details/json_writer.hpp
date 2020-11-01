@@ -1,5 +1,6 @@
 #pragma once
 #include <criterion/details/benchmark_result.hpp>
+#include <criterion/details/benchmark.hpp>
 #include <iomanip>
 #include <fstream>
 #include <unordered_map>
@@ -19,13 +20,14 @@ public:
       os << "  \"benchmarks\": [\n";
 
       bool first{true};
-      for (const auto &kvpair : results) {
+      for (const auto &name : benchmark::benchmark_execution_order) {
+        const auto& this_result = results.at(name);
         if (first) {
           first = false;
         } else {
           os << ",\n";
         }
-        os << kvpair.second.to_json();
+        os << this_result.to_json();
       }
 
       os << "\n";

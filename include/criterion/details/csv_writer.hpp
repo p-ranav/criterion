@@ -1,5 +1,6 @@
 #pragma once
 #include <criterion/details/benchmark_result.hpp>
+#include <criterion/details/benchmark.hpp>
 #include <iomanip>
 #include <fstream>
 #include <unordered_map>
@@ -15,9 +16,10 @@ public:
     bool result{false};
     std::ofstream os(filename);
     if (os.is_open()) {
-      os << benchmark_result::csv_header() << "\n";
-      for (const auto &kvpair : results) {
-        os << kvpair.second.to_csv() << "\n";
+      os << "name,warmup_runs,benchmark_runs,iterations_per_run,best_estimate_mean,best_estimate_rsd,overall_best_execution_time,overall_worst_execution_time\n";
+      for (const auto &name : benchmark::benchmark_execution_order) {
+        const auto& this_result = results.at(name);
+        os << this_result.to_csv() << "\n";
       }
       result = true;
     }
