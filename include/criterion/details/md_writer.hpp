@@ -17,8 +17,8 @@ public:
     std::ofstream os(filename);
     if (os.is_open()) {
 
-      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
-      os << "|------|------------:|---------------:|----------------------:|------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
+      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
+      os << "|------|------------:|---------------:|----------------------:|---------------------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
