@@ -190,7 +190,7 @@ The above benchmark shows that using `std::make_shared` is the way to go.
 
 ### Exporting Results (csv, json, etc.)
 
-Benchmarks can be exported to a number of formats: `.csv`, `.json`, '.md`, and `.asciidoc`.
+Benchmarks can be exported to one of a number of formats: `.csv`, `.json`, `.md`, and `.asciidoc`.
 
 ```console
 foo@bar:~$ ./vector_sort --help
