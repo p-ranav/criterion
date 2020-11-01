@@ -7,7 +7,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <numeric>
 #include <optional>
 #include <sstream>
@@ -124,7 +124,7 @@ class benchmark {
 public:
   benchmark(const benchmark_config &config) : config_(config) {}
 
-  static inline std::map<std::string, benchmark_result> results;
+  static inline std::unordered_map<std::string, benchmark_result> results;
 
   void run() {
     std::chrono::steady_clock::time_point benchmark_start_timestamp;
