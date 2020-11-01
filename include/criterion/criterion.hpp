@@ -4,6 +4,7 @@
 #include <criterion/details/csv_writer.hpp>
 #include <criterion/details/json_writer.hpp>
 #include <criterion/details/md_writer.hpp>
+#include <criterion/details/asciidoc_writer.hpp>
 #include <criterion/details/indicators.hpp>
 #include <criterion/details/macros.hpp>
 #include <criterion/details/structopt.hpp>
