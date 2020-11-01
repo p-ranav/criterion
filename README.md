@@ -134,8 +134,6 @@ foo@bar:~$ ./build/samples/merge_sort/merge_sort
 
 ### Passing Arguments (Part 2)
 
-`Criterion` allows for passing arguments like `std::function`. This allows for benchmarking and comparison of implementations. 
-
 Let's say we have the following struct and we need to create a `std::shared_ptr` to it.
 
 ```cpp
