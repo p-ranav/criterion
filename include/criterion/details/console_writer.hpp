@@ -76,7 +76,7 @@ public:
     //           << result.num_iterations * result.num_runs
     //           << termcolor::reset << "\n";
 
-    std::cout << "      " << result.num_runs << " runs, "
+    std::cout << "      " << result.num_runs << (result.num_runs > 1 ? " runs, " : " run, ")
               << result.num_iterations << " iterations per run\n";
 
     std::cout << "    " 
