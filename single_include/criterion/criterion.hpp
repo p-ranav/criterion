@@ -1140,7 +1140,7 @@ public:
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
         lowest_rsd_mean = mean;
-        lowest_rsd_index = num_runs;
+        lowest_rsd_index = num_runs + 1;
         fastest_execution_time = *std::min_element(durations.begin(), durations.end());
         slowest_execution_time = *std::max_element(durations.begin(), durations.end());
         first_run = false;
@@ -1154,7 +1154,7 @@ public:
 
           if (mean < lowest_rsd_mean) {
             lowest_rsd_mean = mean; // new mean is lower
-            lowest_rsd_index = num_runs;
+            lowest_rsd_index = num_runs + 1;
           } else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
             lowest_rsd_index = current_lowest_rsd_index;
@@ -1372,6 +1372,7 @@ public:
 // #include <criterion/details/benchmark_config.hpp>
 // #include <criterion/details/csv_writer.hpp>
 #include <functional>
+#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -1391,6 +1392,36 @@ struct benchmark_registration_helper_struct {
   static void execute_registered_benchmarks() {
     for (const auto &config : registered_benchmarks()) {
       benchmark{config}.run();
+    }
+  }
+
+  static void list_registered_benchmarks() {
+    for (const auto &config : registered_benchmarks()) {
+      std::cout << config.name << config.parameterized_instance_name << "\n";
+    }
+  }
+
+  static void list_filtered_registered_benchmarks(const std::string& regex_string) {
+    std::regex regexp(regex_string);
+    std::smatch matches;
+    for (const auto &config : registered_benchmarks()) {
+      const auto benchmark_instance_name = config.name + config.parameterized_instance_name;
+      std::regex_search(benchmark_instance_name, matches, regexp);
+      if (!matches.empty()) {
+        std::cout << benchmark_instance_name << "\n";
+      }
+    }
+  }
+
+  static void execute_filtered_registered_benchmarks(const std::string& regex_string) {
+    std::regex regexp(regex_string);
+    std::smatch matches;
+    for (const auto &config : registered_benchmarks()) {
+      const auto benchmark_instance_name = config.name + config.parameterized_instance_name;
+      std::regex_search(benchmark_instance_name, matches, regexp);
+      if (!matches.empty()) {
+        benchmark{config}.run();
+      }
     }
   }
 };
@@ -5000,6 +5031,9 @@ static inline void print_criterion_help(const std::string& program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
   std::cout << termcolor::bold << "     " << program_name << " " << termcolor::reset 
+            << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
+            << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << "] "
+            << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset 
             << " {csv,json,md,asciidoc} <filename>]\n";
   std::cout << "\n";
@@ -5008,6 +5042,17 @@ static inline void print_criterion_help(const std::string& program_name) {
             << " microbenchmarking utility repeatedly executes a list of registered functions,\n     statistically analyzing the temporal behavior of code\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
+  std::cout << "          Print the list of available benchmarks\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     --list_filtered " << " "
+            << termcolor::underline << "filename" << termcolor::reset << "\n";
+  std::cout << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     --run_filtered " << " "
+            << termcolor::underline << "filename" << termcolor::reset << "\n";
+  std::cout << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -e,--export_results " << termcolor::reset 
             << termcolor::underline << "format" << termcolor::reset
@@ -5025,6 +5070,7 @@ static inline void print_criterion_help(const std::string& program_name) {
 } 
 
 #pragma once
+#include <cstring>
 // #include <criterion/details/termcolor.hpp>
 // #include <criterion/details/macros.hpp>
 // #include <criterion/details/structopt.hpp>
@@ -5051,10 +5097,16 @@ struct options {
 
     // Export filename
     std::string filename;
-
-    // Prints help
-    std::optional<bool> help = false;
   };
+
+  // List available benchmarks
+  std::optional<bool> list = false;
+
+  // List available benchmarks, filtered by user-provided regex string
+  std::optional<std::string> list_filtered;
+
+  // Run filtered benchmarks, filtered by user-provided regex string
+  std::optional<std::string> run_filtered;
 
   // --export_results csv result.csv
   // --export_results json foo.json
@@ -5070,7 +5122,7 @@ struct options {
 }
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, export_results, help, remaining);
+STRUCTOPT(criterion::options, list, list_filtered, run_filtered, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) { 
   const auto program_name = argv[0];
@@ -5085,8 +5137,16 @@ static inline int criterion_main(int argc, char *argv[]) {
   try {
     auto options = structopt::app(program_name).parse<criterion::options>(argc, argv);
 
-    if (options.help.value() == true || (options.export_results.has_value() && options.export_results.value().help.value() == true)) {
+    if (options.help.value() == true) {
       print_criterion_help(program_name);
+      exit(0);
+    }
+    else if (options.list.value() == true) {
+      criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
+      exit(0);
+    }
+    else if (options.list_filtered.has_value()) {
+      criterion::benchmark_registration_helper_struct::list_filtered_registered_benchmarks(options.list_filtered.value());
       exit(0);
     }
     else if (!options.remaining.empty()) {
@@ -5099,7 +5159,11 @@ static inline int criterion_main(int argc, char *argv[]) {
     }
 
     // Run benchmarks
-    criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();   
+    if (options.run_filtered.has_value()) { // Run filtered
+      criterion::benchmark_registration_helper_struct::execute_filtered_registered_benchmarks(options.run_filtered.value());
+    } else {
+      criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();   
+    }
 
     if (options.export_results.has_value()) {
       auto export_options = options.export_results.value();
@@ -5122,7 +5186,9 @@ static inline int criterion_main(int argc, char *argv[]) {
     }
 
   } catch (structopt::exception& e) {
-    std::cout << termcolor::bold << termcolor::red << e.what() << termcolor::reset << "\n";
+    const auto message = e.what();
+    if (message && std::strlen(message) > 0)
+      std::cout << termcolor::bold << termcolor::red << message << termcolor::reset << "\n";
     print_criterion_help(program_name);
     exit(1);
   }                                                      
