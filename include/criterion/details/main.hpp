@@ -29,8 +29,8 @@ struct options {
     std::string filename;
   };
 
-  // Run benchmarks quietly
-  std::optional<bool> quiet = false;
+  // Number of warmup runs to perform on benchmark
+  std::optional<std::size_t> warmup;
 
   // List available benchmarks
   std::optional<bool> list = false;
@@ -45,6 +45,9 @@ struct options {
   // --export_results json foo.json
   std::optional<export_options> export_results;
 
+  // Run benchmarks quietly
+  std::optional<bool> quiet = false;
+
   // Prints help
   std::optional<bool> help = false;
 
@@ -55,7 +58,7 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help,
+STRUCTOPT(criterion::options, warmup, list, list_filtered, run_filtered, export_results, quiet, help,
           remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
@@ -74,8 +77,6 @@ static inline int criterion_main(int argc, char *argv[]) {
     if (options.help.value() == true) {
       print_criterion_help(program_name);
       exit(0);
-    } else if (options.quiet.value() == true) {
-      criterion::benchmark::show_console_output = false;
     } else if (options.list.value() == true) {
       criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
       exit(0);
@@ -90,6 +91,14 @@ static inline int criterion_main(int argc, char *argv[]) {
       std::cout << "\"" << termcolor::reset << "\n";
       print_criterion_help(program_name);
       exit(1);
+    }
+
+    if (options.warmup.has_value()) {
+      criterion::benchmark::warmup_runs = options.warmup.value();
+    }
+
+    if (options.quiet.value() == true) {
+      criterion::benchmark::show_console_output = false;
     }
 
     // Run benchmarks

@@ -27,7 +27,6 @@ class benchmark {
   benchmark_config config_;
   using Fn = benchmark_config::Fn;
 
-  std::size_t warmup_runs_{2};
   static inline constexpr std::size_t num_iterations_{20};
   std::size_t max_num_runs_{0};
   const long double ten_seconds_{1e+10};
@@ -55,7 +54,7 @@ class benchmark {
 
     long double result;
     bool first_run{true};
-    for (std::size_t i = 0; i < warmup_runs_; i++) {
+    for (std::size_t i = 0; i < warmup_runs; i++) {
       std::chrono::steady_clock::time_point start_timestamp;
       std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
       const auto start = steady_clock::now();
@@ -107,6 +106,7 @@ public:
   static inline std::unordered_map<std::string, benchmark_result> results;
   static inline std::vector<std::string> benchmark_execution_order;
   static inline bool show_console_output = true;
+  static inline std::size_t warmup_runs = 3;
 
   void run() {
     std::chrono::steady_clock::time_point benchmark_start_timestamp;
@@ -253,7 +253,7 @@ public:
 
     const auto benchmark_result = criterion::benchmark_result{
         .name = benchmark_instance_name,
-        .num_warmup_runs = warmup_runs_,
+        .num_warmup_runs = warmup_runs,
         .num_runs = max_num_runs_,
         .num_iterations = num_iterations_,
         .lowest_rsd = lowest_rsd,

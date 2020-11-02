@@ -2975,7 +2975,6 @@ class benchmark {
   benchmark_config config_;
   using Fn = benchmark_config::Fn;
 
-  std::size_t warmup_runs_{2};
   static inline constexpr std::size_t num_iterations_{20};
   std::size_t max_num_runs_{0};
   const long double ten_seconds_{1e+10};
@@ -3003,7 +3002,7 @@ class benchmark {
 
     long double result;
     bool first_run{true};
-    for (std::size_t i = 0; i < warmup_runs_; i++) {
+    for (std::size_t i = 0; i < warmup_runs; i++) {
       std::chrono::steady_clock::time_point start_timestamp;
       std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
       const auto start = steady_clock::now();
@@ -3055,6 +3054,7 @@ public:
   static inline std::unordered_map<std::string, benchmark_result> results;
   static inline std::vector<std::string> benchmark_execution_order;
   static inline bool show_console_output = true;
+  static inline std::size_t warmup_runs = 3;
 
   void run() {
     std::chrono::steady_clock::time_point benchmark_start_timestamp;
@@ -3201,7 +3201,7 @@ public:
 
     const auto benchmark_result = criterion::benchmark_result{
         .name = benchmark_instance_name,
-        .num_warmup_runs = warmup_runs_,
+        .num_warmup_runs = warmup_runs,
         .num_runs = max_num_runs_,
         .num_iterations = num_iterations_,
         .lowest_rsd = lowest_rsd,
@@ -6940,12 +6940,14 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
   std::cout << termcolor::bold << "     " << program_name << "\n           " << termcolor::reset
-            << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
-            << termcolor::reset << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
+            << "[" << termcolor::bold << "-w,--warmup" << termcolor::reset << " <number>]\n"
+            << "           [" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
             << "\n           [" << termcolor::bold << "-e,--export_results" << termcolor::reset
-            << " {csv,json,md,asciidoc} <filename>]\n";
+            << " {csv,json,md,asciidoc} <filename>]\n"
+            << "           [" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
+            << "[" << termcolor::bold << "-h,--help" << termcolor::reset << "] ";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
   std::cout << "     This microbenchmarking utility repeatedly executes a list of benchmarks,\n   "
@@ -6953,8 +6955,10 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     -q,--quiet " << termcolor::reset << "\n";
-  std::cout << "          Run benchmarks quietly, suppressing activity indicators\n";
+  std::cout << termcolor::bold << "     -w,--warmup " << termcolor::reset 
+            << termcolor::underline << "number" << termcolor::reset
+            << "\n";
+  std::cout << "          Number of warmup runs to execute before the benchmark\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";
@@ -6983,6 +6987,9 @@ static inline void print_criterion_help(const std::string &program_name) {
             << "        Markdown (md) text file\n";
   std::cout << "          " << termcolor::bold << "asciidoc" << termcolor::reset
             << "  AsciiDoc (asciidoc) text file\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     -q,--quiet " << termcolor::reset << "\n";
+  std::cout << "          Run benchmarks quietly, suppressing activity indicators\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -h,--help " << termcolor::reset << "\n";
   std::cout << "          Print this help message\n";
@@ -7019,8 +7026,8 @@ struct options {
     std::string filename;
   };
 
-  // Run benchmarks quietly
-  std::optional<bool> quiet = false;
+  // Number of warmup runs to perform on benchmark
+  std::optional<std::size_t> warmup;
 
   // List available benchmarks
   std::optional<bool> list = false;
@@ -7035,6 +7042,9 @@ struct options {
   // --export_results json foo.json
   std::optional<export_options> export_results;
 
+  // Run benchmarks quietly
+  std::optional<bool> quiet = false;
+
   // Prints help
   std::optional<bool> help = false;
 
@@ -7045,7 +7055,7 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help,
+STRUCTOPT(criterion::options, warmup, list, list_filtered, run_filtered, export_results, quiet, help,
           remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
@@ -7064,8 +7074,6 @@ static inline int criterion_main(int argc, char *argv[]) {
     if (options.help.value() == true) {
       print_criterion_help(program_name);
       exit(0);
-    } else if (options.quiet.value() == true) {
-      criterion::benchmark::show_console_output = false;
     } else if (options.list.value() == true) {
       criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
       exit(0);
@@ -7080,6 +7088,14 @@ static inline int criterion_main(int argc, char *argv[]) {
       std::cout << "\"" << termcolor::reset << "\n";
       print_criterion_help(program_name);
       exit(1);
+    }
+
+    if (options.warmup.has_value()) {
+      criterion::benchmark::warmup_runs = options.warmup.value();
+    }
+
+    if (options.quiet.value() == true) {
+      criterion::benchmark::show_console_output = false;
     }
 
     // Run benchmarks
