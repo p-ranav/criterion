@@ -9,10 +9,18 @@ struct benchmark_result {
   std::size_t num_warmup_runs;
   std::size_t num_runs;
   std::size_t num_iterations;
-  long double best_estimate_mean;
-  long double best_estimate_rsd;
-  long double overall_best_execution_time;
-  long double overall_worst_execution_time;
+
+  long double lowest_rsd; // Lowest relative standard deviation (RSD)
+  long double lowest_rsd_mean; // mean @ lowest RSD
+  std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
+
+  long double mean_execution_time; // global mean execution time
+  long double fastest_execution_time; // global best execution time
+  long double slowest_execution_time; // global worst execution time
+
+  long double average_iteration_performance; // iterations per second in the average case
+  long double fastest_iteration_performance; // iterations per second in the fastest case
+  long double slowest_iteration_performance; // iterations per second in the slowest case
 
   std::string to_csv() const {
     std::stringstream os;
@@ -24,13 +32,13 @@ struct benchmark_result {
        << ','
        << num_runs * num_iterations
        << ','
-       << std::setprecision(0) << best_estimate_mean
+       << std::setprecision(0) << mean_execution_time
        << ','
-       << std::setprecision(2) << best_estimate_rsd
+       << std::setprecision(2) << lowest_rsd
        << ','
-       << std::setprecision(0) << overall_best_execution_time
+       << std::setprecision(0) << fastest_execution_time
        << ','
-       << std::setprecision(0) << overall_worst_execution_time;
+       << std::setprecision(0) << slowest_execution_time;
 
     return os.str();
   }
@@ -42,10 +50,10 @@ struct benchmark_result {
     os << "      \"name\": \"" << name << "\",\n";
     os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
     os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
-    os << "      \"best_estimate_mean_execution_time\": " << std::setprecision(0) << best_estimate_mean << ",\n";
-    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << best_estimate_rsd << ",\n";
-    os << "      \"overall_best_execution_time\": " << std::setprecision(0) << overall_best_execution_time << ",\n";
-    os << "      \"overall_worst_execution_time\": " << std::setprecision(0) << overall_worst_execution_time << "\n";
+    os << "      \"mean_execution_time\": " << std::setprecision(0) << mean_execution_time << ",\n";
+    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << lowest_rsd << ",\n";
+    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time << ",\n";
+    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time << "\n";
     os << "    }";
 
     return os.str();
@@ -57,10 +65,10 @@ struct benchmark_result {
     os << "|" << name;
     os << "|" << num_warmup_runs;
     os << "|" << num_runs * num_iterations;
-    os << "|" << std::setprecision(0) << best_estimate_mean;
-    os << "|" << std::setprecision(2) << best_estimate_rsd;
-    os << "|" << std::setprecision(0) << overall_best_execution_time;
-    os << "|" << std::setprecision(0) << overall_worst_execution_time;
+    os << "|" << std::setprecision(0) << mean_execution_time;
+    os << "|" << std::setprecision(2) << lowest_rsd;
+    os << "|" << std::setprecision(0) << fastest_execution_time;
+    os << "|" << std::setprecision(0) << slowest_execution_time;
     return os.str();
   }
 };

@@ -637,24 +637,6 @@ namespace termcolor
 
 
 #pragma once
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <csignal>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <unordered_map>
-#include <numeric>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <utility>
-#include <vector>
-
-// #include <criterion/details/benchmark_config.hpp>
 #include <chrono>
 #include <functional>
 #include <optional>
@@ -679,6 +661,13 @@ struct benchmark_config {
 };
 
 } // namespace criterion
+
+#pragma once
+#include <array>
+#include <iomanip>
+#include <string>
+#include <sstream>
+// #include <criterion/details/termcolor.hpp>
 // #include <criterion/details/benchmark_result.hpp>
 #include <sstream>
 #include <string>
@@ -690,10 +679,18 @@ struct benchmark_result {
   std::size_t num_warmup_runs;
   std::size_t num_runs;
   std::size_t num_iterations;
-  long double best_estimate_mean;
-  long double best_estimate_rsd;
-  long double overall_best_execution_time;
-  long double overall_worst_execution_time;
+
+  long double lowest_rsd; // Lowest relative standard deviation (RSD)
+  long double lowest_rsd_mean; // mean @ lowest RSD
+  std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
+
+  long double mean_execution_time; // global mean execution time
+  long double fastest_execution_time; // global best execution time
+  long double slowest_execution_time; // global worst execution time
+
+  long double average_iteration_performance; // iterations per second in the average case
+  long double fastest_iteration_performance; // iterations per second in the fastest case
+  long double slowest_iteration_performance; // iterations per second in the slowest case
 
   std::string to_csv() const {
     std::stringstream os;
@@ -705,13 +702,13 @@ struct benchmark_result {
        << ','
        << num_runs * num_iterations
        << ','
-       << std::setprecision(0) << best_estimate_mean
+       << std::setprecision(0) << mean_execution_time
        << ','
-       << std::setprecision(2) << best_estimate_rsd
+       << std::setprecision(2) << lowest_rsd
        << ','
-       << std::setprecision(0) << overall_best_execution_time
+       << std::setprecision(0) << fastest_execution_time
        << ','
-       << std::setprecision(0) << overall_worst_execution_time;
+       << std::setprecision(0) << slowest_execution_time;
 
     return os.str();
   }
@@ -723,10 +720,10 @@ struct benchmark_result {
     os << "      \"name\": \"" << name << "\",\n";
     os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
     os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
-    os << "      \"best_estimate_mean_execution_time\": " << std::setprecision(0) << best_estimate_mean << ",\n";
-    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << best_estimate_rsd << ",\n";
-    os << "      \"overall_best_execution_time\": " << std::setprecision(0) << overall_best_execution_time << ",\n";
-    os << "      \"overall_worst_execution_time\": " << std::setprecision(0) << overall_worst_execution_time << "\n";
+    os << "      \"mean_execution_time\": " << std::setprecision(0) << mean_execution_time << ",\n";
+    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << lowest_rsd << ",\n";
+    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time << ",\n";
+    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time << "\n";
     os << "    }";
 
     return os.str();
@@ -738,16 +735,264 @@ struct benchmark_result {
     os << "|" << name;
     os << "|" << num_warmup_runs;
     os << "|" << num_runs * num_iterations;
-    os << "|" << std::setprecision(0) << best_estimate_mean;
-    os << "|" << std::setprecision(2) << best_estimate_rsd;
-    os << "|" << std::setprecision(0) << overall_best_execution_time;
-    os << "|" << std::setprecision(0) << overall_worst_execution_time;
+    os << "|" << std::setprecision(0) << mean_execution_time;
+    os << "|" << std::setprecision(2) << lowest_rsd;
+    os << "|" << std::setprecision(0) << fastest_execution_time;
+    os << "|" << std::setprecision(0) << slowest_execution_time;
     return os.str();
   }
 };
 
 } // namespace criterion
+
+namespace criterion {
+
+class console_writer {
+  static std::string duration_to_string(const long double &ns) {
+    const auto duration = std::abs(ns);
+    std::stringstream os;
+    if (duration < 1E3) {
+      os << std::fixed << std::setprecision(0) << duration << " ns";
+    } else if (duration < 1E6) {
+      os << std::fixed << std::setprecision(0) << (duration / 1E3) << " us";
+    } else if (duration < 1E9) {
+      os << std::fixed << std::setprecision(0) << (duration / 1E6) << " ms";
+    } else {
+      os << std::fixed << std::setprecision(0) << (duration / 1E9) << " s";
+    }
+
+    std::string result{""};
+    if (ns < 0) {
+      result += "-";
+    } else {
+      result += "+";
+    }
+    result += os.str();
+    return result;
+  }
+
+  static std::string ordinal(std::size_t n) {
+    static const std::array<std::string, 10> ends{"th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"};
+    if (((n % 100) >= 11) && ((n % 100) <= 13)) {
+      return std::to_string(n) + "th";
+    }
+    else {
+      return std::to_string(n) + ends[n % 10];
+    }
+  }
+
+public:
+  static void write_result(const benchmark_result& result) {
+    std::cout << termcolor::bold << termcolor::green
+              << "✓ "
+              << result.name 
+              << termcolor::reset 
+              << "\n";
+
+    std::cout << "    " 
+              << termcolor::bold << termcolor::underline 
+              << "Configuration" 
+              << termcolor::reset << "\n";
+
+    // std::cout << "      Warmup Runs               " 
+    //           << std::right << std::setw(10) 
+    //           << result.num_warmup_runs
+    //           << termcolor::reset << "\n";
+
+    // std::cout << "      Benchmark Runs            " 
+    //           << std::right << std::setw(10) 
+    //           << result.num_runs
+    //           << termcolor::reset << "\n";
+
+    // std::cout << "      Iterations per Run        " 
+    //           << std::right << std::setw(10) 
+    //           << result.num_iterations
+    //           << termcolor::reset << "\n";
+
+    // std::cout << termcolor::bold << termcolor::white 
+    //           << "      Total Number of Iterations" 
+    //           << std::right << std::setw(10) 
+    //           << result.num_iterations * result.num_runs
+    //           << termcolor::reset << "\n";
+
+    std::cout << "      " << result.num_runs << " runs, "
+              << result.num_iterations << " iterations per run\n";
+
+    std::cout << "    " 
+              << termcolor::bold << termcolor::underline 
+              << "Execution Time" 
+              << termcolor::reset << "\n";
+
+    std::cout << "      Average    " 
+              << std::right << std::setw(10) 
+              << duration_to_string(result.mean_execution_time) 
+              << termcolor::reset << "\n";
+
+    const auto best_mean_difference = result.fastest_execution_time - result.mean_execution_time;
+    const auto best_mean_percentage_difference = (best_mean_difference / static_cast<long double>(result.mean_execution_time) * 100.0);
+    
+    std::cout << "      Fastest    " 
+              << std::right << std::setw(10) 
+              << duration_to_string(result.fastest_execution_time);
+    std::cout << " ("
+              << termcolor::green << duration_to_string(best_mean_difference) << " / " 
+              << std::setprecision(1) << std::fixed << best_mean_percentage_difference << " %" << termcolor::reset
+              << ")"
+              << "\n"; 
+
+    const auto worst_mean_difference = result.slowest_execution_time - result.mean_execution_time;
+    const auto worst_mean_percentage_difference = (worst_mean_difference / static_cast<long double>(result.mean_execution_time) * 100.0);
+    
+    std::cout << "      Slowest    " 
+              << std::right << std::setw(10) 
+              << duration_to_string(result.slowest_execution_time);
+    std::cout << " ("
+              << termcolor::red << duration_to_string(worst_mean_difference) << " / " 
+              << std::setprecision(1) << std::fixed << worst_mean_percentage_difference << " %" << termcolor::reset
+              << ")"
+              << "\n"; 
+
+    std::cout << termcolor::bold << termcolor::white
+              << "      Best Run   " 
+              << std::right << std::setw(10) 
+              << duration_to_string(result.lowest_rsd_mean) << " ± " << std::setprecision(2) << result.lowest_rsd << "%"
+              << " ("
+              << ordinal(result.lowest_rsd_index)
+              << " run)"
+              << termcolor::reset
+              << "\n";
+
+    std::cout << "    " 
+              << termcolor::bold << termcolor::underline 
+              << "Performance" 
+              << termcolor::reset << "\n";
+
+    std::cout << "      Average    " 
+              << std::setprecision(0)
+              << std::right << std::setw(10) 
+              << result.average_iteration_performance
+              << " iterations/s"
+              << termcolor::reset << "\n";
+
+    std::cout << "      Fastest    " 
+              << std::setprecision(0)
+              << std::right << std::setw(10) 
+              << result.fastest_iteration_performance
+              << " iterations/s"
+              << termcolor::reset << "\n";
+
+    std::cout << "      Slowest    " 
+              << std::setprecision(0)
+              << std::right << std::setw(10) 
+              << result.slowest_iteration_performance
+              << " iterations/s"
+              << termcolor::reset << "\n";
+
+    std::cout << "\n";
+  }
+};
+
+}
+
+#pragma once
+#include <sstream>
+#include <string>
+
+namespace criterion {
+
+struct benchmark_result {
+  std::string name;
+  std::size_t num_warmup_runs;
+  std::size_t num_runs;
+  std::size_t num_iterations;
+
+  long double lowest_rsd; // Lowest relative standard deviation (RSD)
+  long double lowest_rsd_mean; // mean @ lowest RSD
+  std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
+
+  long double mean_execution_time; // global mean execution time
+  long double fastest_execution_time; // global best execution time
+  long double slowest_execution_time; // global worst execution time
+
+  long double average_iteration_performance; // iterations per second in the average case
+  long double fastest_iteration_performance; // iterations per second in the fastest case
+  long double slowest_iteration_performance; // iterations per second in the slowest case
+
+  std::string to_csv() const {
+    std::stringstream os;
+
+    os << '"' << name 
+       << "\",";
+    os << std::fixed
+       << num_warmup_runs 
+       << ','
+       << num_runs * num_iterations
+       << ','
+       << std::setprecision(0) << mean_execution_time
+       << ','
+       << std::setprecision(2) << lowest_rsd
+       << ','
+       << std::setprecision(0) << fastest_execution_time
+       << ','
+       << std::setprecision(0) << slowest_execution_time;
+
+    return os.str();
+  }
+
+  std::string to_json() const {
+    std::stringstream os;
+    os << std::fixed;
+    os << "    {\n";
+    os << "      \"name\": \"" << name << "\",\n";
+    os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
+    os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
+    os << "      \"mean_execution_time\": " << std::setprecision(0) << mean_execution_time << ",\n";
+    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << lowest_rsd << ",\n";
+    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time << ",\n";
+    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time << "\n";
+    os << "    }";
+
+    return os.str();
+  }
+
+  std::string to_md() const {
+    std::stringstream os;
+    os << std::fixed;
+    os << "|" << name;
+    os << "|" << num_warmup_runs;
+    os << "|" << num_runs * num_iterations;
+    os << "|" << std::setprecision(0) << mean_execution_time;
+    os << "|" << std::setprecision(2) << lowest_rsd;
+    os << "|" << std::setprecision(0) << fastest_execution_time;
+    os << "|" << std::setprecision(0) << slowest_execution_time;
+    return os.str();
+  }
+};
+
+} // namespace criterion
+
+#pragma once
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <csignal>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <unordered_map>
+#include <numeric>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
+
+// #include <criterion/details/benchmark_config.hpp>
+// #include <criterion/details/benchmark_result.hpp>
 // #include <criterion/details/termcolor.hpp>
+// #include <criterion/details/console_writer.hpp>
 
 namespace criterion {
 
@@ -756,7 +1001,7 @@ class benchmark {
   using Fn = benchmark_config::Fn;
 
   std::size_t warmup_runs_{3};
-  std::size_t num_iterations_{0};
+  static inline constexpr std::size_t num_iterations_{20};
   std::size_t max_num_runs_{0};
   const long double ten_seconds_{1e+10};
   long double min_benchmark_time_{ten_seconds_};
@@ -806,11 +1051,10 @@ class benchmark {
     if (early_estimate_execution_time < 1)
       early_estimate_execution_time = 1;
 
-    num_iterations_ = 10; // fixed
     auto min_runs = 1;
 
     if (early_estimate_execution_time <= 100) { // 100ns
-      benchmark_time_ = 5e+8; // 500ms
+      benchmark_time_ = 1e+9; // one second
     }
     else if (early_estimate_execution_time <= 1000) { // 1us
       benchmark_time_ = 1e+9; // one second
@@ -837,20 +1081,6 @@ class benchmark {
     max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
-  static std::string duration_to_string(const long double &ns) {
-    std::stringstream os;
-    if (ns < 1E3) {
-      os << std::setprecision(3) << ns << "ns";
-    } else if (ns < 1E6) {
-      os << std::setprecision(3) << (ns / 1E3) << "us";
-    } else if (ns < 1E9) {
-      os << std::setprecision(3) << (ns / 1E6) << "ms";
-    } else {
-      os << std::setprecision(3) << (ns / 1E9) << "s";
-    }
-    return os.str();
-  }
-
 public:
   benchmark(const benchmark_config &config) : config_(config) {}
 
@@ -873,14 +1103,17 @@ public:
     update_iterations();
 
     long double lowest_rsd = 100;
-    long double best_estimate_mean = 0;
+    long double lowest_rsd_mean = 0;
+    std::size_t lowest_rsd_index = 0;
     bool first_run{true};
 
-    long double overall_best_execution_time = 0;
-    long double overall_worst_execution_time = 0;
+    long double fastest_execution_time = 0;
+    long double slowest_execution_time = 0;
+    std::vector<long double> means_in_each_iteration{};
+    means_in_each_iteration.reserve(max_num_runs_);
 
     std::size_t num_runs = 0;
-    std::array<long double, 10> durations;
+    std::array<long double, num_iterations_> durations;
 
     while (true) {
       // Benchmark runs
@@ -908,35 +1141,43 @@ public:
       const long double standard_deviation = std::sqrt(variance);
       const long double relative_standard_deviation = standard_deviation * 100 / mean;
 
+      const auto mean_in_this_run = std::accumulate(durations.begin(), durations.end(), 0.0) / num_iterations_;
+      means_in_each_iteration.push_back(mean_in_this_run);
+
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
-        best_estimate_mean = mean;
-        overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
-        overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+        lowest_rsd_mean = mean;
+        lowest_rsd_index = num_runs;
+        fastest_execution_time = *std::min_element(durations.begin(), durations.end());
+        slowest_execution_time = *std::max_element(durations.begin(), durations.end());
         first_run = false;
       } else {
         // Save record of lowest RSD
         const auto current_lowest_rsd = lowest_rsd;
+        const auto current_lowest_rsd_index = lowest_rsd_index;
         lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
         if (lowest_rsd < current_lowest_rsd) {
           // There's a new LOWEST relative standard deviation
 
-          if (mean < best_estimate_mean) {
-            best_estimate_mean = mean; // new mean is lower
+          if (mean < lowest_rsd_mean) {
+            lowest_rsd_mean = mean; // new mean is lower
+            lowest_rsd_index = num_runs;
           } else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
+            lowest_rsd_index = current_lowest_rsd_index;
           }
         } else {
           lowest_rsd = current_lowest_rsd; // go back to old estimate
+          lowest_rsd_index = current_lowest_rsd_index;
         }
 
         // Save best and worst duration
         const auto current_best_execution_time = *std::min_element(durations.begin(), durations.end());
         if (current_best_execution_time > 0)
-          overall_best_execution_time = std::min(overall_best_execution_time, current_best_execution_time);
+          fastest_execution_time = std::min(fastest_execution_time, current_best_execution_time);
 
         const auto current_worst_execution_time = *std::max_element(durations.begin(), durations.end());
-        overall_worst_execution_time = std::max(overall_worst_execution_time, current_worst_execution_time);
+        slowest_execution_time = std::max(slowest_execution_time, current_worst_execution_time);
       }
 
       if (num_runs >= max_num_runs_) {
@@ -952,128 +1193,28 @@ public:
       num_runs += 1;
     }
 
-    std::cout << termcolor::white << termcolor::bold
-       << "✓ " 
-       << benchmark_instance_name << " " 
-       << termcolor::green
-       << std::setprecision(3)
-       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
-       << termcolor::white
-       << " (" 
-       << termcolor::cyan
-       << duration_to_string(overall_best_execution_time)
-       << " … " 
-       << termcolor::red
-       << duration_to_string(overall_worst_execution_time) 
-       << termcolor::white
-       << ")"
-       << termcolor::reset << std::endl;
+    const auto mean_execution_time = (std::accumulate(means_in_each_iteration.begin(), means_in_each_iteration.end(), 0.0) / max_num_runs_);
 
-    results.insert(std::make_pair(
-        benchmark_instance_name,
-        benchmark_result{.name = benchmark_instance_name,
-                          .num_warmup_runs = warmup_runs_,
-                          .num_runs = max_num_runs_,
-                          .num_iterations = num_iterations_,
-                          .best_estimate_mean = best_estimate_mean,
-                          .best_estimate_rsd = lowest_rsd,
-                          .overall_best_execution_time = overall_best_execution_time,
-                          .overall_worst_execution_time = overall_worst_execution_time}));
-  }
-};
+    const auto benchmark_result = 
+      criterion::benchmark_result{
+        .name = benchmark_instance_name,
+        .num_warmup_runs = warmup_runs_,
+        .num_runs = max_num_runs_,
+        .num_iterations = num_iterations_,
+        .lowest_rsd = lowest_rsd,
+        .lowest_rsd_mean = lowest_rsd_mean,
+        .lowest_rsd_index = lowest_rsd_index,
+        .mean_execution_time = mean_execution_time,
+        .fastest_execution_time = fastest_execution_time,
+        .slowest_execution_time = slowest_execution_time,
+        .average_iteration_performance = (1E9 / mean_execution_time),
+        .fastest_iteration_performance = (1E9 / fastest_execution_time),
+        .slowest_iteration_performance = (1E9 / slowest_execution_time)
+      };
 
-} // namespace criterion
+    results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
 
-#pragma once
-#include <chrono>
-#include <functional>
-#include <optional>
-#include <string>
-#include <string_view>
-
-namespace criterion {
-
-struct benchmark_config {
-  static inline std::tuple<> empty_tuple{};
-  std::string name;
-  using Fn = std::function<void(
-      std::chrono::steady_clock::time_point &,                // start time stamp
-      std::optional<std::chrono::steady_clock::time_point> &, // teardown time stamp
-      void *parameters)>;                                     // benchmark parameters
-  Fn fn;
-  std::string parameterized_instance_name = "";
-  void *parameters = (void *)(&empty_tuple);
-
-  enum class benchmark_reporting_type { console };
-  benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
-};
-
-} // namespace criterion
-
-#pragma once
-#include <sstream>
-#include <string>
-
-namespace criterion {
-
-struct benchmark_result {
-  std::string name;
-  std::size_t num_warmup_runs;
-  std::size_t num_runs;
-  std::size_t num_iterations;
-  long double best_estimate_mean;
-  long double best_estimate_rsd;
-  long double overall_best_execution_time;
-  long double overall_worst_execution_time;
-
-  std::string to_csv() const {
-    std::stringstream os;
-
-    os << '"' << name 
-       << "\",";
-    os << std::fixed
-       << num_warmup_runs 
-       << ','
-       << num_runs * num_iterations
-       << ','
-       << std::setprecision(0) << best_estimate_mean
-       << ','
-       << std::setprecision(2) << best_estimate_rsd
-       << ','
-       << std::setprecision(0) << overall_best_execution_time
-       << ','
-       << std::setprecision(0) << overall_worst_execution_time;
-
-    return os.str();
-  }
-
-  std::string to_json() const {
-    std::stringstream os;
-    os << std::fixed;
-    os << "    {\n";
-    os << "      \"name\": \"" << name << "\",\n";
-    os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
-    os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
-    os << "      \"best_estimate_mean_execution_time\": " << std::setprecision(0) << best_estimate_mean << ",\n";
-    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << best_estimate_rsd << ",\n";
-    os << "      \"overall_best_execution_time\": " << std::setprecision(0) << overall_best_execution_time << ",\n";
-    os << "      \"overall_worst_execution_time\": " << std::setprecision(0) << overall_worst_execution_time << "\n";
-    os << "    }";
-
-    return os.str();
-  }
-
-  std::string to_md() const {
-    std::stringstream os;
-    os << std::fixed;
-    os << "|" << name;
-    os << "|" << num_warmup_runs;
-    os << "|" << num_runs * num_iterations;
-    os << "|" << std::setprecision(0) << best_estimate_mean;
-    os << "|" << std::setprecision(2) << best_estimate_rsd;
-    os << "|" << std::setprecision(0) << overall_best_execution_time;
-    os << "|" << std::setprecision(0) << overall_worst_execution_time;
-    return os.str();
+    console_writer::write_result(benchmark_result);
   }
 };
 
@@ -1097,7 +1238,7 @@ public:
     bool result{false};
     std::ofstream os(filename);
     if (os.is_open()) {
-      os << "name,warmup_runs,iterations,best_estimate_mean_execution_time,best_estimate_rsd,overall_best_execution_time,overall_worst_execution_time\n";
+      os << "name,warmup_runs,iterations,mean_execution_time_execution_time,best_estimate_rsd,fastest_execution_time,slowest_execution_time\n";
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
         os << this_result.to_csv() << "\n";
@@ -1174,8 +1315,8 @@ public:
     std::ofstream os(filename);
     if (os.is_open()) {
 
-      os << "| Name | Warmup Runs | Iterations | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
-      os << "|------|------------:|-----------:|---------------------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
+      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
+      os << "|------|------------:|-----------:|-------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
@@ -1214,15 +1355,15 @@ public:
       std::time_t t = std::time(nullptr);
       os << ".Criterion Benchmark Results (" << std::put_time(std::gmtime(&t), "%c %Z") << ")\n";
       os << "[cols=\"<,>,>,>,>,>,>\", options=\"header\"]\n";
-      os << "|========================================================================================================================================================================\n";
-      os << "| Name | Warmup Runs | Iterations | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
+      os << "|==========================================================================================================================================================\n";
+      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
         os << this_result.to_md();
         os << "\n";
       }
-      os << "|========================================================================================================================================================================\n";
+      os << "|==========================================================================================================================================================\n";
       result = true;
     }
     os.close();
@@ -4859,18 +5000,18 @@ public:
 #include <sstream>
 // #include <criterion/details/termcolor.hpp>
 
-static inline void print_criterion_help() {
+static inline void print_criterion_help(const std::string& program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "NAME\n" << termcolor::reset;
-  std::cout << "     " << termcolor::bold << "criterion" << termcolor::reset << " -- Run Criterion benchmarks\n";
+  std::cout << "     " << termcolor::bold << program_name << termcolor::reset << " -- Run Criterion benchmarks\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
-  std::cout << termcolor::bold << "     criterion " << termcolor::reset 
+  std::cout << termcolor::bold << "     " << program_name << " " << termcolor::reset 
             << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset 
             << " {csv,json,md,asciidoc} <filename>]\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
-  std::cout << "     The " << termcolor::bold << "criterion" << termcolor::reset 
+  std::cout << "     The " << termcolor::bold << program_name << termcolor::reset 
             << " microbenchmarking utility repeatedly executes a list of registered functions,\n     statistically analyzing the temporal behavior of code\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
@@ -4939,6 +5080,7 @@ STRUCTOPT(criterion::options::export_options, format, filename);
 STRUCTOPT(criterion::options, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) { 
+  const auto program_name = argv[0];
 
   std::signal(SIGTERM, signal_handler);                                                          
   std::signal(SIGSEGV, signal_handler);                                                          
@@ -4948,10 +5090,10 @@ static inline int criterion_main(int argc, char *argv[]) {
   std::signal(SIGFPE, signal_handler);
 
   try {
-    auto options = structopt::app("criterion").parse<criterion::options>(argc, argv);
+    auto options = structopt::app(program_name).parse<criterion::options>(argc, argv);
 
     if (options.help.value() == true || (options.export_results.has_value() && options.export_results.value().help.value() == true)) {
-      print_criterion_help();
+      print_criterion_help(program_name);
       exit(0);
     }
     else if (!options.remaining.empty()) {
@@ -4959,7 +5101,7 @@ static inline int criterion_main(int argc, char *argv[]) {
       std::cout << "Error: Unrecognized argument \"";
       std::cout << options.remaining[0];
       std::cout << "\"" << termcolor::reset << "\n";
-      print_criterion_help();
+      print_criterion_help(program_name);
       exit(1);
     }
 
@@ -4986,10 +5128,9 @@ static inline int criterion_main(int argc, char *argv[]) {
       }
     }
 
-
   } catch (structopt::exception& e) {
     std::cout << termcolor::bold << termcolor::red << e.what() << termcolor::reset << "\n";
-    print_criterion_help();
+    print_criterion_help(program_name);
     exit(1);
   }                                                      
   return 0;        

@@ -245,37 +245,37 @@ foo@bar:~$ cat results.json
       "name": "VectorSort/10",
       "warmup_runs": 3,
       "iterations": 3333330,
-      "best_estimate_mean_execution_time": 3,
+      "mean_execution_time_execution_time": 3,
       "best_estimate_rsd": 0.00,
-      "overall_best_execution_time": 1,
-      "overall_worst_execution_time": 39317
+      "fastest_execution_time": 1,
+      "slowest_execution_time": 39317
     },
     {
       "name": "VectorSort/100",
       "warmup_runs": 3,
       "iterations": 3030300,
-      "best_estimate_mean_execution_time": 82,
+      "mean_execution_time_execution_time": 82,
       "best_estimate_rsd": 3.80,
-      "overall_best_execution_time": 74,
-      "overall_worst_execution_time": 63922
+      "fastest_execution_time": 74,
+      "slowest_execution_time": 63922
     },
     {
       "name": "VectorSort/1000",
       "warmup_runs": 3,
       "iterations": 1165500,
-      "best_estimate_mean_execution_time": 653,
+      "mean_execution_time_execution_time": 653,
       "best_estimate_rsd": 0.77,
-      "overall_best_execution_time": 641,
-      "overall_worst_execution_time": 1732148
+      "fastest_execution_time": 641,
+      "slowest_execution_time": 1732148
     },
     {
       "name": "VectorSort/10000",
       "warmup_runs": 3,
       "iterations": 254640,
-      "best_estimate_mean_execution_time": 6296,
+      "mean_execution_time_execution_time": 6296,
       "best_estimate_rsd": 0.11,
-      "overall_best_execution_time": 6275,
-      "overall_worst_execution_time": 82021
+      "fastest_execution_time": 6275,
+      "slowest_execution_time": 82021
     }
   ]
 }

@@ -1,7 +1,8 @@
 #include <criterion/details/termcolor.hpp>
-#include <criterion/details/benchmark.hpp>
 #include <criterion/details/benchmark_config.hpp>
+#include <criterion/details/console_writer.hpp>
 #include <criterion/details/benchmark_result.hpp>
+#include <criterion/details/benchmark.hpp>
 #include <criterion/details/csv_writer.hpp>
 #include <criterion/details/json_writer.hpp>
 #include <criterion/details/md_writer.hpp>

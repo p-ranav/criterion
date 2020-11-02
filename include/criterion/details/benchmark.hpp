@@ -19,6 +19,7 @@
 #include <criterion/details/benchmark_config.hpp>
 #include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/termcolor.hpp>
+#include <criterion/details/console_writer.hpp>
 
 namespace criterion {
 
@@ -27,7 +28,7 @@ class benchmark {
   using Fn = benchmark_config::Fn;
 
   std::size_t warmup_runs_{3};
-  std::size_t num_iterations_{0};
+  static inline constexpr std::size_t num_iterations_{20};
   std::size_t max_num_runs_{0};
   const long double ten_seconds_{1e+10};
   long double min_benchmark_time_{ten_seconds_};
@@ -77,11 +78,10 @@ class benchmark {
     if (early_estimate_execution_time < 1)
       early_estimate_execution_time = 1;
 
-    num_iterations_ = 10; // fixed
     auto min_runs = 1;
 
     if (early_estimate_execution_time <= 100) { // 100ns
-      benchmark_time_ = 5e+8; // 500ms
+      benchmark_time_ = 1e+9; // one second
     }
     else if (early_estimate_execution_time <= 1000) { // 1us
       benchmark_time_ = 1e+9; // one second
@@ -108,20 +108,6 @@ class benchmark {
     max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
-  static std::string duration_to_string(const long double &ns) {
-    std::stringstream os;
-    if (ns < 1E3) {
-      os << std::setprecision(3) << ns << "ns";
-    } else if (ns < 1E6) {
-      os << std::setprecision(3) << (ns / 1E3) << "us";
-    } else if (ns < 1E9) {
-      os << std::setprecision(3) << (ns / 1E6) << "ms";
-    } else {
-      os << std::setprecision(3) << (ns / 1E9) << "s";
-    }
-    return os.str();
-  }
-
 public:
   benchmark(const benchmark_config &config) : config_(config) {}
 
@@ -144,14 +130,17 @@ public:
     update_iterations();
 
     long double lowest_rsd = 100;
-    long double best_estimate_mean = 0;
+    long double lowest_rsd_mean = 0;
+    std::size_t lowest_rsd_index = 0;
     bool first_run{true};
 
-    long double overall_best_execution_time = 0;
-    long double overall_worst_execution_time = 0;
+    long double fastest_execution_time = 0;
+    long double slowest_execution_time = 0;
+    std::vector<long double> means_in_each_iteration{};
+    means_in_each_iteration.reserve(max_num_runs_);
 
     std::size_t num_runs = 0;
-    std::array<long double, 10> durations;
+    std::array<long double, num_iterations_> durations;
 
     while (true) {
       // Benchmark runs
@@ -179,35 +168,43 @@ public:
       const long double standard_deviation = std::sqrt(variance);
       const long double relative_standard_deviation = standard_deviation * 100 / mean;
 
+      const auto mean_in_this_run = std::accumulate(durations.begin(), durations.end(), 0.0) / num_iterations_;
+      means_in_each_iteration.push_back(mean_in_this_run);
+
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
-        best_estimate_mean = mean;
-        overall_best_execution_time = *std::min_element(durations.begin(), durations.end());
-        overall_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+        lowest_rsd_mean = mean;
+        lowest_rsd_index = num_runs;
+        fastest_execution_time = *std::min_element(durations.begin(), durations.end());
+        slowest_execution_time = *std::max_element(durations.begin(), durations.end());
         first_run = false;
       } else {
         // Save record of lowest RSD
         const auto current_lowest_rsd = lowest_rsd;
+        const auto current_lowest_rsd_index = lowest_rsd_index;
         lowest_rsd = std::min(relative_standard_deviation, lowest_rsd);
         if (lowest_rsd < current_lowest_rsd) {
           // There's a new LOWEST relative standard deviation
 
-          if (mean < best_estimate_mean) {
-            best_estimate_mean = mean; // new mean is lower
+          if (mean < lowest_rsd_mean) {
+            lowest_rsd_mean = mean; // new mean is lower
+            lowest_rsd_index = num_runs;
           } else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
+            lowest_rsd_index = current_lowest_rsd_index;
           }
         } else {
           lowest_rsd = current_lowest_rsd; // go back to old estimate
+          lowest_rsd_index = current_lowest_rsd_index;
         }
 
         // Save best and worst duration
         const auto current_best_execution_time = *std::min_element(durations.begin(), durations.end());
         if (current_best_execution_time > 0)
-          overall_best_execution_time = std::min(overall_best_execution_time, current_best_execution_time);
+          fastest_execution_time = std::min(fastest_execution_time, current_best_execution_time);
 
         const auto current_worst_execution_time = *std::max_element(durations.begin(), durations.end());
-        overall_worst_execution_time = std::max(overall_worst_execution_time, current_worst_execution_time);
+        slowest_execution_time = std::max(slowest_execution_time, current_worst_execution_time);
       }
 
       if (num_runs >= max_num_runs_) {
@@ -223,33 +220,28 @@ public:
       num_runs += 1;
     }
 
-    std::cout << termcolor::white << termcolor::bold
-       << "✓ " 
-       << benchmark_instance_name << " " 
-       << termcolor::green
-       << std::setprecision(3)
-       << duration_to_string(best_estimate_mean) << " ± " << lowest_rsd << "%"
-       << termcolor::white
-       << " (" 
-       << termcolor::cyan
-       << duration_to_string(overall_best_execution_time)
-       << " … " 
-       << termcolor::red
-       << duration_to_string(overall_worst_execution_time) 
-       << termcolor::white
-       << ")"
-       << termcolor::reset << std::endl;
+    const auto mean_execution_time = (std::accumulate(means_in_each_iteration.begin(), means_in_each_iteration.end(), 0.0) / max_num_runs_);
 
-    results.insert(std::make_pair(
-        benchmark_instance_name,
-        benchmark_result{.name = benchmark_instance_name,
-                          .num_warmup_runs = warmup_runs_,
-                          .num_runs = max_num_runs_,
-                          .num_iterations = num_iterations_,
-                          .best_estimate_mean = best_estimate_mean,
-                          .best_estimate_rsd = lowest_rsd,
-                          .overall_best_execution_time = overall_best_execution_time,
-                          .overall_worst_execution_time = overall_worst_execution_time}));
+    const auto benchmark_result = 
+      criterion::benchmark_result{
+        .name = benchmark_instance_name,
+        .num_warmup_runs = warmup_runs_,
+        .num_runs = max_num_runs_,
+        .num_iterations = num_iterations_,
+        .lowest_rsd = lowest_rsd,
+        .lowest_rsd_mean = lowest_rsd_mean,
+        .lowest_rsd_index = lowest_rsd_index,
+        .mean_execution_time = mean_execution_time,
+        .fastest_execution_time = fastest_execution_time,
+        .slowest_execution_time = slowest_execution_time,
+        .average_iteration_performance = (1E9 / mean_execution_time),
+        .fastest_iteration_performance = (1E9 / fastest_execution_time),
+        .slowest_iteration_performance = (1E9 / slowest_execution_time)
+      };
+
+    results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
+
+    console_writer::write_result(benchmark_result);
   }
 };
 

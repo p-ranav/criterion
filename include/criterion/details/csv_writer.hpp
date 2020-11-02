@@ -16,7 +16,7 @@ public:
     bool result{false};
     std::ofstream os(filename);
     if (os.is_open()) {
-      os << "name,warmup_runs,iterations,best_estimate_mean_execution_time,best_estimate_rsd,overall_best_execution_time,overall_worst_execution_time\n";
+      os << "name,warmup_runs,iterations,mean_execution_time_execution_time,best_estimate_rsd,fastest_execution_time,slowest_execution_time\n";
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
         os << this_result.to_csv() << "\n";
