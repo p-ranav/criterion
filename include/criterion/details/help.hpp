@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <sstream>
-#include <criterion/details/indicators.hpp>
+#include <criterion/details/termcolor.hpp>
 
 static inline void print_criterion_help() {
   std::cout << "\n";

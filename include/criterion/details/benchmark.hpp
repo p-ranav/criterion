@@ -14,10 +14,11 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <criterion/details/benchmark_config.hpp>
 #include <criterion/details/benchmark_result.hpp>
-#include <criterion/details/indicators.hpp>
+#include <criterion/details/termcolor.hpp>
 
 namespace criterion {
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <criterion/details/indicators.hpp>
+#include <criterion/details/termcolor.hpp>
 #include <criterion/details/macros.hpp>
 #include <criterion/details/structopt.hpp>
 #include <criterion/details/help.hpp>
@@ -9,7 +9,6 @@
 #include <criterion/details/asciidoc_writer.hpp>
 
 static inline void signal_handler(int signal) {
-  indicators::show_console_cursor(true);
   std::cout << termcolor::reset;
   exit(signal);
 }
