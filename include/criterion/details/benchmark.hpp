@@ -264,7 +264,10 @@ public:
     // bar.set_option(option::PrefixText{" ✓ " + benchmark_instance_name + " "});
     bar.set_progress(total_number_of_iterations);
     bar.mark_as_completed();
-    std::cout << std::flush;
+
+    // Show console cursor
+    show_console_cursor(true);
+
     console_writer::write_result(benchmark_result);
   }
 };
