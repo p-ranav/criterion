@@ -200,20 +200,6 @@ foo@bar:~$ cat results.json
 {
   "benchmarks": [
     {
-      "name": "VectorSort/10",
-      "warmup_runs": 2,
-      "iterations": 3095960,
-      "mean_execution_time": 16.56,
-      "fastest_execution_time": 1.00,
-      "slowest_execution_time": 68820.00,
-      "lowest_rsd_execution_time": 1.00,
-      "lowest_rsd_percentage": 0.00,
-      "lowest_rsd_index": 21811,
-      "average_iteration_performance": 60397657.38,
-      "fastest_iteration_performance": 1000000000.00,
-      "slowest_iteration_performance": 14530.66
-    },
-    {
       "name": "VectorSort/100",
       "warmup_runs": 2,
       "iterations": 2857140,
