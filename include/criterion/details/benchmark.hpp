@@ -170,7 +170,7 @@ public:
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
         lowest_rsd_mean = mean;
-        lowest_rsd_index = num_runs;
+        lowest_rsd_index = num_runs + 1;
         fastest_execution_time = *std::min_element(durations.begin(), durations.end());
         slowest_execution_time = *std::max_element(durations.begin(), durations.end());
         first_run = false;
@@ -184,7 +184,7 @@ public:
 
           if (mean < lowest_rsd_mean) {
             lowest_rsd_mean = mean; // new mean is lower
-            lowest_rsd_index = num_runs;
+            lowest_rsd_index = num_runs + 1;
           } else {
             lowest_rsd = current_lowest_rsd; // go back to old estimate
             lowest_rsd_index = current_lowest_rsd_index;
