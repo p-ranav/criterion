@@ -194,50 +194,66 @@ Benchmarks can be exported to one of a number of formats: `.csv`, `.json`, `.md`
 Use `--export_results` (or `-e`) to export results to one of the supported formats.
 
 ```console
-foo@bar:~$ ./vector_sort --export_results json results.json
-✓ VectorSort/10 3ns ± 0% (1ns … 39.3us)
-✓ VectorSort/100 82.2ns ± 3.8% (74ns … 63.9us)
-✓ VectorSort/1000 653ns ± 0.766% (641ns … 1.73ms)
-✓ VectorSort/10000 6.3us ± 0.111% (6.28us … 82us)
+foo@bar:~$ ./vector_sort -e json results.json -q # run quietly and export to JSON
 
 foo@bar:~$ cat results.json
 {
   "benchmarks": [
     {
       "name": "VectorSort/10",
-      "warmup_runs": 3,
-      "iterations": 3333330,
-      "mean_execution_time_execution_time": 3,
-      "best_estimate_rsd": 0.00,
-      "fastest_execution_time": 1,
-      "slowest_execution_time": 39317
+      "warmup_runs": 2,
+      "iterations": 3095960,
+      "mean_execution_time": 16.56,
+      "fastest_execution_time": 1.00,
+      "slowest_execution_time": 68820.00,
+      "lowest_rsd_execution_time": 1.00,
+      "lowest_rsd_percentage": 0.00,
+      "lowest_rsd_index": 21811,
+      "average_iteration_performance": 60397657.38,
+      "fastest_iteration_performance": 1000000000.00,
+      "slowest_iteration_performance": 14530.66
     },
     {
       "name": "VectorSort/100",
-      "warmup_runs": 3,
-      "iterations": 3030300,
-      "mean_execution_time_execution_time": 82,
-      "best_estimate_rsd": 3.80,
-      "fastest_execution_time": 74,
-      "slowest_execution_time": 63922
+      "warmup_runs": 2,
+      "iterations": 2857140,
+      "mean_execution_time": 168.70,
+      "fastest_execution_time": 73.00,
+      "slowest_execution_time": 88809.00,
+      "lowest_rsd_execution_time": 84.05,
+      "lowest_rsd_percentage": 3.29,
+      "lowest_rsd_index": 57278,
+      "average_iteration_performance": 5927600.84,
+      "fastest_iteration_performance": 13698630.14,
+      "slowest_iteration_performance": 11260.12
     },
     {
       "name": "VectorSort/1000",
-      "warmup_runs": 3,
-      "iterations": 1165500,
-      "mean_execution_time_execution_time": 653,
-      "best_estimate_rsd": 0.77,
-      "fastest_execution_time": 641,
-      "slowest_execution_time": 1732148
+      "warmup_runs": 2,
+      "iterations": 2254280,
+      "mean_execution_time": 1007.70,
+      "fastest_execution_time": 640.00,
+      "slowest_execution_time": 102530.00,
+      "lowest_rsd_execution_time": 647.45,
+      "lowest_rsd_percentage": 0.83,
+      "lowest_rsd_index": 14098,
+      "average_iteration_performance": 992355.48,
+      "fastest_iteration_performance": 1562500.00,
+      "slowest_iteration_performance": 9753.24
     },
     {
       "name": "VectorSort/10000",
-      "warmup_runs": 3,
-      "iterations": 254640,
-      "mean_execution_time_execution_time": 6296,
-      "best_estimate_rsd": 0.11,
-      "fastest_execution_time": 6275,
-      "slowest_execution_time": 82021
+      "warmup_runs": 2,
+      "iterations": 259320,
+      "mean_execution_time": 8833.26,
+      "fastest_execution_time": 6276.00,
+      "slowest_execution_time": 114548.00,
+      "lowest_rsd_execution_time": 8374.15,
+      "lowest_rsd_percentage": 0.11,
+      "lowest_rsd_index": 7905,
+      "average_iteration_performance": 113208.45,
+      "fastest_iteration_performance": 159337.16,
+      "slowest_iteration_performance": 8729.96
     }
   ]
 }
