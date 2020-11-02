@@ -61,7 +61,7 @@ BENCHMARK(MergeSort)
 {
   SETUP_BENCHMARK(
     const auto size = 100;
-    std::vector<int> vec(size, 0);
+    std::vector<int> vec(size, 0); // vector of size 100
   )
  
   // Code to be benchmarked
@@ -75,12 +75,7 @@ BENCHMARK(MergeSort)
 CRITERION_BENCHMARK_MAIN()
 ```
 
-```console
-foo@bar:~$ ./build/samples/merge_sort/merge_sort
-✓ MergeSort/100 7.68us ± 0.0727% (7.54us … 117us)
-```
-
-The above benchmark measures performance of our merge sort implementation on a vector of size 100. What if we want to run this benchmark on a variety of sizes?
+What if we want to run this benchmark on a variety of sizes?
 
 ### Passing Arguments
 
@@ -120,20 +115,6 @@ INVOKE_BENCHMARK_FOR_EACH(MergeSort,
 )
 
 CRITERION_BENCHMARK_MAIN()
-```
-
-Sample console output:
-
-```console
-foo@bar:~$ ./build/samples/merge_sort/merge_sort
-✓ MergeSort/10 677ns ± 0.0724% (646ns … 68.9us)
-✓ MergeSort/100 7.21us ± 0.0426% (7.1us … 228us)
-✓ MergeSort/1K 70us ± 0.0349% (69.9us … 1.85ms)
-✓ MergeSort/10K 743us ± 0.0394% (727us … 1.87ms)
-✓ MergeSort/100K 8.07ms ± 0.958% (7.36ms … 13.2ms)
-✓ MergeSort/1M 78.2ms ± 2.06% (76.6ms … 99.8ms)
-✓ MergeSort/10M 891ms ± 3.54% (847ms … 1.02s)
-✓ MergeSort/100M 9.52s ± 3.76% (9s … 10.1s)
 ```
 
 ### Passing Arguments (Part 2)
@@ -182,14 +163,6 @@ INVOKE_BENCHMARK_FOR_EACH(ConstructSharedPtr,
 
 CRITERION_BENCHMARK_MAIN()
 ```
-
-```console
-foo@bar:~$ ./build/samples/make_shared/make_shared
-✓ ConstructSharedPtr/new 184ns ± 0.163% (137ns … 69.1us)
-✓ ConstructSharedPtr/make_shared 68.8ns ± 0.581% (67ns … 66.7us)
-```
-
-The above benchmark shows that using `std::make_shared` is the way to go.
 
 ### CRITERION_BENCHMARK_MAIN
 
