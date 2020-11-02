@@ -78,7 +78,7 @@ class benchmark {
     if (early_estimate_execution_time < 1)
       early_estimate_execution_time = 1;
 
-    auto min_runs = 1;
+    auto min_runs = 2;
 
     if (early_estimate_execution_time <= 100) { // 100ns
       benchmark_time_ = 5e+8; // 500 ms
@@ -100,12 +100,8 @@ class benchmark {
     }
 
     benchmark_time_ = std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
-
     const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
-
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
-
-    max_num_runs_ = std::min(max_num_runs_, size_t(1E7)); // no more than 1E7 runs, don't need it
   }
 
 public:
