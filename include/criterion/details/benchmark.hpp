@@ -33,6 +33,7 @@ class benchmark {
   const long double ten_seconds_{1e+10};
   long double min_benchmark_time_{ten_seconds_};
   long double benchmark_time_;
+  long double early_estimate_execution_time_;
 
   long double estimate_minimum_measurement_cost() {
     using namespace std::chrono;
@@ -55,48 +56,50 @@ class benchmark {
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
-      std::chrono::steady_clock::time_point start_timestamp;
-      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-      const auto start = steady_clock::now();
-      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
-      const auto end = steady_clock::now();
-      const auto execution_time =
-          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-      if (first_run) {
-        result = execution_time;
-        first_run = false;
-      } else {
-        result = std::min(execution_time, result);
+      for (std::size_t j = 0; j < num_iterations_; j++) {
+        std::chrono::steady_clock::time_point start_timestamp;
+        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+        const auto start = steady_clock::now();
+        config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
+        const auto end = steady_clock::now();
+        const auto execution_time =
+            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+        if (first_run) {
+          result = execution_time;
+          first_run = false;
+        } else {
+          result = std::min(execution_time, result);
+        }
       }
     }
     return result;
   }
 
   void update_iterations() {
-    auto early_estimate_execution_time = estimate_execution_time();
+    early_estimate_execution_time_ = estimate_execution_time();
 
-    if (early_estimate_execution_time < 1)
-      early_estimate_execution_time = 1;
+    if (early_estimate_execution_time_ < 1)
+      early_estimate_execution_time_ = 1;
 
     auto min_runs = 2;
 
-    if (early_estimate_execution_time <= 100) {              // 100ns
+    if (early_estimate_execution_time_ <= 100) {              // 100ns
       benchmark_time_ = 5e+8;                                // 500 ms
-    } else if (early_estimate_execution_time <= 1000) {      // 1us
-      benchmark_time_ = 1e+9;                                // one second
-    } else if (early_estimate_execution_time <= 100000) {    // 100us
-      benchmark_time_ = 2e+9;                                // two seconds
-    } else if (early_estimate_execution_time <= 1000000) {   // 1ms
-      benchmark_time_ = 5e+9;                                // 5 seconds
-    } else if (early_estimate_execution_time <= 100000000) { // 100ms
-      benchmark_time_ = 7.5e+9;                              // 7.5 seconds
+    } else if (early_estimate_execution_time_ <= 1000) {      // 1us
+      benchmark_time_ = 1e+9;                                // 1s
+    } else if (early_estimate_execution_time_ <= 100000) {    // 100us
+      benchmark_time_ = 2.5e+9;                              // 2.5s
+    } else if (early_estimate_execution_time_ <= 1000000) {   // 1ms
+      benchmark_time_ = 5e+9;                                // 5s
+    } else if (early_estimate_execution_time_ <= 100000000) { // 100ms
+      benchmark_time_ = 7.5e+9;                              // 7.5s
     } else {
       benchmark_time_ = min_benchmark_time_;
     }
 
     benchmark_time_ =
-        std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
-    const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
+        std::max(early_estimate_execution_time_ * min_runs * num_iterations_, benchmark_time_);
+    const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time_;
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
   }
 
@@ -251,6 +254,7 @@ public:
         .lowest_rsd = lowest_rsd,
         .lowest_rsd_mean = lowest_rsd_mean,
         .lowest_rsd_index = lowest_rsd_index,
+        .warmup_execution_time = early_estimate_execution_time_,
         .mean_execution_time = mean_execution_time,
         .fastest_execution_time = fastest_execution_time,
         .slowest_execution_time = slowest_execution_time,

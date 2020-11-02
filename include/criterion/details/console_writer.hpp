@@ -48,20 +48,22 @@ public:
     std::cout << "    " << termcolor::bold << termcolor::underline << "Configuration"
               << termcolor::reset << "\n";
 
-    std::cout << "      " << result.num_runs << (result.num_runs > 1 ? " runs, " : " run, ")
+    std::cout << "      " 
+              << result.num_warmup_runs << " warmup runs, "
+              << result.num_runs << (result.num_runs > 1 ? " benchmark runs, " : " run, ")
               << result.num_iterations << " iterations per run\n";
 
     std::cout << "    " << termcolor::bold << termcolor::underline << "Execution Time"
               << termcolor::reset << "\n";
 
-    std::cout << "      Average    " << std::right << std::setw(10)
+    std::cout << "      Average           " << std::right << std::setw(10)
               << duration_to_string(result.mean_execution_time) << termcolor::reset << "\n";
 
     const auto best_mean_difference = result.fastest_execution_time - result.mean_execution_time;
     const auto best_mean_percentage_difference =
         (best_mean_difference / static_cast<long double>(result.mean_execution_time) * 100.0);
 
-    std::cout << "      Fastest    " << std::right << std::setw(10)
+    std::cout << "      Fastest           " << std::right << std::setw(10)
               << duration_to_string(result.fastest_execution_time);
     std::cout << " (" << termcolor::green << duration_to_string(best_mean_difference) << ", "
               << std::setprecision(2) << std::fixed << best_mean_percentage_difference << " %"
@@ -72,14 +74,14 @@ public:
     const auto worst_mean_percentage_difference =
         (worst_mean_difference / static_cast<long double>(result.mean_execution_time) * 100.0);
 
-    std::cout << "      Slowest    " << std::right << std::setw(10)
+    std::cout << "      Slowest           " << std::right << std::setw(10)
               << duration_to_string(result.slowest_execution_time);
     std::cout << " (" << termcolor::red << duration_to_string(worst_mean_difference) << ", "
               << std::setprecision(2) << std::fixed << worst_mean_percentage_difference << " %"
               << termcolor::reset << ")"
               << "\n";
 
-    std::cout << termcolor::bold << termcolor::white << "      Best Run   " << std::right
+    std::cout << termcolor::bold << termcolor::white << "      Most Consistent   " << std::right
               << std::setw(10) << duration_to_string(result.lowest_rsd_mean) << " ± "
               << std::setprecision(2) << result.lowest_rsd << "%"
               << " (" << ordinal(result.lowest_rsd_index) << " run)" << termcolor::reset << "\n";

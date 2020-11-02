@@ -14,6 +14,7 @@ struct benchmark_result {
   long double lowest_rsd_mean;  // mean @ lowest RSD
   std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
 
+  long double warmup_execution_time; // execution time during warmup
   long double mean_execution_time;    // global mean execution time
   long double fastest_execution_time; // global best execution time
   long double slowest_execution_time; // global worst execution time
