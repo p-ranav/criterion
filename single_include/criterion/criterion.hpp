@@ -637,6 +637,24 @@ namespace termcolor
 
 
 #pragma once
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <csignal>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <unordered_map>
+#include <numeric>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
+
+// #include <criterion/details/benchmark_config.hpp>
 #include <chrono>
 #include <functional>
 #include <optional>
@@ -661,8 +679,7 @@ struct benchmark_config {
 };
 
 } // namespace criterion
-
-#pragma once
+// #include <criterion/details/benchmark_result.hpp>
 #include <sstream>
 #include <string>
 
@@ -730,27 +747,6 @@ struct benchmark_result {
 };
 
 } // namespace criterion
-
-#pragma once
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <csignal>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <unordered_map>
-#include <numeric>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <utility>
-#include <vector>
-
-// #include <criterion/details/benchmark_config.hpp>
-// #include <criterion/details/benchmark_result.hpp>
 // #include <criterion/details/termcolor.hpp>
 
 namespace criterion {
@@ -983,6 +979,101 @@ public:
                           .best_estimate_rsd = lowest_rsd,
                           .overall_best_execution_time = overall_best_execution_time,
                           .overall_worst_execution_time = overall_worst_execution_time}));
+  }
+};
+
+} // namespace criterion
+
+#pragma once
+#include <chrono>
+#include <functional>
+#include <optional>
+#include <string>
+#include <string_view>
+
+namespace criterion {
+
+struct benchmark_config {
+  static inline std::tuple<> empty_tuple{};
+  std::string name;
+  using Fn = std::function<void(
+      std::chrono::steady_clock::time_point &,                // start time stamp
+      std::optional<std::chrono::steady_clock::time_point> &, // teardown time stamp
+      void *parameters)>;                                     // benchmark parameters
+  Fn fn;
+  std::string parameterized_instance_name = "";
+  void *parameters = (void *)(&empty_tuple);
+
+  enum class benchmark_reporting_type { console };
+  benchmark_reporting_type reporting_type = benchmark_reporting_type::console;
+};
+
+} // namespace criterion
+
+#pragma once
+#include <sstream>
+#include <string>
+
+namespace criterion {
+
+struct benchmark_result {
+  std::string name;
+  std::size_t num_warmup_runs;
+  std::size_t num_runs;
+  std::size_t num_iterations;
+  long double best_estimate_mean;
+  long double best_estimate_rsd;
+  long double overall_best_execution_time;
+  long double overall_worst_execution_time;
+
+  std::string to_csv() const {
+    std::stringstream os;
+
+    os << '"' << name 
+       << "\",";
+    os << std::fixed
+       << num_warmup_runs 
+       << ','
+       << num_runs * num_iterations
+       << ','
+       << std::setprecision(0) << best_estimate_mean
+       << ','
+       << std::setprecision(2) << best_estimate_rsd
+       << ','
+       << std::setprecision(0) << overall_best_execution_time
+       << ','
+       << std::setprecision(0) << overall_worst_execution_time;
+
+    return os.str();
+  }
+
+  std::string to_json() const {
+    std::stringstream os;
+    os << std::fixed;
+    os << "    {\n";
+    os << "      \"name\": \"" << name << "\",\n";
+    os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
+    os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
+    os << "      \"best_estimate_mean_execution_time\": " << std::setprecision(0) << best_estimate_mean << ",\n";
+    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << best_estimate_rsd << ",\n";
+    os << "      \"overall_best_execution_time\": " << std::setprecision(0) << overall_best_execution_time << ",\n";
+    os << "      \"overall_worst_execution_time\": " << std::setprecision(0) << overall_worst_execution_time << "\n";
+    os << "    }";
+
+    return os.str();
+  }
+
+  std::string to_md() const {
+    std::stringstream os;
+    os << std::fixed;
+    os << "|" << name;
+    os << "|" << num_warmup_runs;
+    os << "|" << num_runs * num_iterations;
+    os << "|" << std::setprecision(0) << best_estimate_mean;
+    os << "|" << std::setprecision(2) << best_estimate_rsd;
+    os << "|" << std::setprecision(0) << overall_best_execution_time;
+    os << "|" << std::setprecision(0) << overall_worst_execution_time;
+    return os.str();
   }
 };
 
