@@ -6928,30 +6928,30 @@ static inline void print_criterion_help(const std::string &program_name) {
             << " -- Run Criterion benchmarks\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
-  std::cout << termcolor::bold << "     " << program_name << " " << termcolor::reset << "["
+  std::cout << termcolor::bold << "     " << program_name 
+            << "\n           " << termcolor::reset << "["
             << termcolor::bold << "-l,--list" << termcolor::reset << "] "
-            << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << "] "
+            << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
-            << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset
+            << "\n           [" << termcolor::bold << "-e,--export_results" << termcolor::reset
             << " {csv,json,md,asciidoc} <filename>]\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
-  std::cout << "     The " << termcolor::bold << program_name << termcolor::reset
-            << " microbenchmarking utility repeatedly executes a list of registered functions,\n   "
-               "  statistically analyzing the temporal behavior of code\n";
+  std::cout << "     This microbenchmarking utility repeatedly executes a list of benchmarks,\n   "
+               "  statistically analyzing the temporal behavior of code.\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --list_filtered "
-            << " " << termcolor::underline << "filename" << termcolor::reset << "\n";
+  std::cout << termcolor::bold << "     --list_filtered " << termcolor::reset
+            << termcolor::underline << "regex" << termcolor::reset << "\n";
   std::cout
       << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --run_filtered "
-            << " " << termcolor::underline << "filename" << termcolor::reset << "\n";
+  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset
+            << termcolor::underline << "regex" << termcolor::reset << "\n";
   std::cout
       << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
