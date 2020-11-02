@@ -23,7 +23,7 @@
      *    [Simple Benchmark](#simple-benchmark)
      *    [Passing Arguments](#passing-arguments)
      *    [Passing Arguments (Part 2)](#passing-arguments-part-2)
-     *    [CRITERION_BENCHMARK_MAIN](#CRITERION_BENCHMARK_MAIN)
+     *    [CRITERION_BENCHMARK_MAIN and Command-line Options](#CRITERION_BENCHMARK_MAIN-and-command-line-options)
      *    [Exporting Results (csv, json etc.)](#exporting-results-csv-json-etc)
 *    [Building Library and Samples](#building-library-and-samples)
 *    [Generating Single Header](#generating-single-header)
@@ -173,7 +173,7 @@ CRITERION_BENCHMARK_MAIN()
   <img height="550" src="img/make_shared.gif"/>  
 </p> 
 
-### CRITERION_BENCHMARK_MAIN
+### CRITERION_BENCHMARK_MAIN and Command-line Options
 
 `CRITERION_BENCHMARK_MAIN()` provides a main function that:
 
