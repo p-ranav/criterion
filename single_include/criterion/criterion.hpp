@@ -2695,6 +2695,7 @@ struct benchmark_result {
   long double lowest_rsd_mean;  // mean @ lowest RSD
   std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
 
+  long double warmup_execution_time;  // execution time during warmup
   long double mean_execution_time;    // global mean execution time
   long double fastest_execution_time; // global best execution time
   long double slowest_execution_time; // global worst execution time
@@ -2795,20 +2796,22 @@ public:
     std::cout << "    " << termcolor::bold << termcolor::underline << "Configuration"
               << termcolor::reset << "\n";
 
-    std::cout << "      " << result.num_runs << (result.num_runs > 1 ? " runs, " : " run, ")
-              << result.num_iterations << " iterations per run\n";
+    std::cout << "      " << result.num_warmup_runs << " warmup runs, " << result.num_runs
+              << (result.num_runs > 1 ? " benchmark runs, " : " benchmark run, ") << result.num_iterations
+              << " iterations per run\n";
 
     std::cout << "    " << termcolor::bold << termcolor::underline << "Execution Time"
               << termcolor::reset << "\n";
 
-    std::cout << "      Average    " << std::right << std::setw(10)
-              << duration_to_string(result.mean_execution_time) << termcolor::reset << "\n";
+    std::cout << termcolor::yellow << termcolor::bold << termcolor::italic << "      Average      "
+              << std::right << std::setw(10) << duration_to_string(result.mean_execution_time)
+              << termcolor::reset << "\n";
 
     const auto best_mean_difference = result.fastest_execution_time - result.mean_execution_time;
     const auto best_mean_percentage_difference =
         (best_mean_difference / static_cast<long double>(result.mean_execution_time) * 100.0);
 
-    std::cout << "      Fastest    " << std::right << std::setw(10)
+    std::cout << "      Fastest      " << std::right << std::setw(10)
               << duration_to_string(result.fastest_execution_time);
     std::cout << " (" << termcolor::green << duration_to_string(best_mean_difference) << ", "
               << std::setprecision(2) << std::fixed << best_mean_percentage_difference << " %"
@@ -2819,14 +2822,14 @@ public:
     const auto worst_mean_percentage_difference =
         (worst_mean_difference / static_cast<long double>(result.mean_execution_time) * 100.0);
 
-    std::cout << "      Slowest    " << std::right << std::setw(10)
+    std::cout << "      Slowest      " << std::right << std::setw(10)
               << duration_to_string(result.slowest_execution_time);
     std::cout << " (" << termcolor::red << duration_to_string(worst_mean_difference) << ", "
               << std::setprecision(2) << std::fixed << worst_mean_percentage_difference << " %"
               << termcolor::reset << ")"
               << "\n";
 
-    std::cout << termcolor::bold << termcolor::white << "      Best Run   " << std::right
+    std::cout << termcolor::bold << termcolor::white << "      Lowest RSD   " << std::right
               << std::setw(10) << duration_to_string(result.lowest_rsd_mean) << " ± "
               << std::setprecision(2) << result.lowest_rsd << "%"
               << " (" << ordinal(result.lowest_rsd_index) << " run)" << termcolor::reset << "\n";
@@ -2888,6 +2891,7 @@ struct benchmark_result {
   long double lowest_rsd_mean;  // mean @ lowest RSD
   std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
 
+  long double warmup_execution_time;  // execution time during warmup
   long double mean_execution_time;    // global mean execution time
   long double fastest_execution_time; // global best execution time
   long double slowest_execution_time; // global worst execution time
@@ -2977,6 +2981,7 @@ class benchmark {
   const long double ten_seconds_{1e+10};
   long double min_benchmark_time_{ten_seconds_};
   long double benchmark_time_;
+  long double early_estimate_execution_time_;
 
   long double estimate_minimum_measurement_cost() {
     using namespace std::chrono;
@@ -2999,48 +3004,50 @@ class benchmark {
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
-      std::chrono::steady_clock::time_point start_timestamp;
-      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-      const auto start = steady_clock::now();
-      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
-      const auto end = steady_clock::now();
-      const auto execution_time =
-          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-      if (first_run) {
-        result = execution_time;
-        first_run = false;
-      } else {
-        result = std::min(execution_time, result);
+      for (std::size_t j = 0; j < num_iterations_; j++) {
+        std::chrono::steady_clock::time_point start_timestamp;
+        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+        const auto start = steady_clock::now();
+        config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
+        const auto end = steady_clock::now();
+        const auto execution_time =
+            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+        if (first_run) {
+          result = execution_time;
+          first_run = false;
+        } else {
+          result = std::min(execution_time, result);
+        }
       }
     }
     return result;
   }
 
   void update_iterations() {
-    auto early_estimate_execution_time = estimate_execution_time();
+    early_estimate_execution_time_ = estimate_execution_time();
 
-    if (early_estimate_execution_time < 1)
-      early_estimate_execution_time = 1;
+    if (early_estimate_execution_time_ < 1)
+      early_estimate_execution_time_ = 1;
 
     auto min_runs = 2;
 
-    if (early_estimate_execution_time <= 100) {              // 100ns
-      benchmark_time_ = 5e+8;                                // 500 ms
-    } else if (early_estimate_execution_time <= 1000) {      // 1us
-      benchmark_time_ = 1e+9;                                // one second
-    } else if (early_estimate_execution_time <= 100000) {    // 100us
-      benchmark_time_ = 2e+9;                                // two seconds
-    } else if (early_estimate_execution_time <= 1000000) {   // 1ms
-      benchmark_time_ = 5e+9;                                // 5 seconds
-    } else if (early_estimate_execution_time <= 100000000) { // 100ms
-      benchmark_time_ = 7.5e+9;                              // 7.5 seconds
+    if (early_estimate_execution_time_ <= 100) {              // 100ns
+      benchmark_time_ = 5e+8;                                 // 500 ms
+    } else if (early_estimate_execution_time_ <= 1000) {      // 1us
+      benchmark_time_ = 1e+9;                                 // 1s
+    } else if (early_estimate_execution_time_ <= 100000) {    // 100us
+      benchmark_time_ = 2.5e+9;                               // 2.5s
+    } else if (early_estimate_execution_time_ <= 1000000) {   // 1ms
+      benchmark_time_ = 5e+9;                                 // 5s
+    } else if (early_estimate_execution_time_ <= 100000000) { // 100ms
+      benchmark_time_ = 7.5e+9;                               // 7.5s
     } else {
       benchmark_time_ = min_benchmark_time_;
     }
 
     benchmark_time_ =
-        std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
-    const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
+        std::max(early_estimate_execution_time_ * min_runs * num_iterations_, benchmark_time_);
+    const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time_;
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
   }
 
@@ -3195,6 +3202,7 @@ public:
         .lowest_rsd = lowest_rsd,
         .lowest_rsd_mean = lowest_rsd_mean,
         .lowest_rsd_index = lowest_rsd_index,
+        .warmup_execution_time = early_estimate_execution_time_,
         .mean_execution_time = mean_execution_time,
         .fastest_execution_time = fastest_execution_time,
         .slowest_execution_time = slowest_execution_time,
