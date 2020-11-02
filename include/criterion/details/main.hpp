@@ -47,6 +47,7 @@ STRUCTOPT(criterion::options::export_options, format, filename);
 STRUCTOPT(criterion::options, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) { 
+  const auto program_name = argv[0];
 
   std::signal(SIGTERM, signal_handler);                                                          
   std::signal(SIGSEGV, signal_handler);                                                          
@@ -56,10 +57,10 @@ static inline int criterion_main(int argc, char *argv[]) {
   std::signal(SIGFPE, signal_handler);
 
   try {
-    auto options = structopt::app("criterion").parse<criterion::options>(argc, argv);
+    auto options = structopt::app(program_name).parse<criterion::options>(argc, argv);
 
     if (options.help.value() == true || (options.export_results.has_value() && options.export_results.value().help.value() == true)) {
-      print_criterion_help();
+      print_criterion_help(program_name);
       exit(0);
     }
     else if (!options.remaining.empty()) {
@@ -67,7 +68,7 @@ static inline int criterion_main(int argc, char *argv[]) {
       std::cout << "Error: Unrecognized argument \"";
       std::cout << options.remaining[0];
       std::cout << "\"" << termcolor::reset << "\n";
-      print_criterion_help();
+      print_criterion_help(program_name);
       exit(1);
     }
 
@@ -94,10 +95,9 @@ static inline int criterion_main(int argc, char *argv[]) {
       }
     }
 
-
   } catch (structopt::exception& e) {
     std::cout << termcolor::bold << termcolor::red << e.what() << termcolor::reset << "\n";
-    print_criterion_help();
+    print_criterion_help(program_name);
     exit(1);
   }                                                      
   return 0;        

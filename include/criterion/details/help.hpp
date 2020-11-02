@@ -3,18 +3,18 @@
 #include <sstream>
 #include <criterion/details/termcolor.hpp>
 
-static inline void print_criterion_help() {
+static inline void print_criterion_help(const std::string& program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "NAME\n" << termcolor::reset;
-  std::cout << "     " << termcolor::bold << "criterion" << termcolor::reset << " -- Run Criterion benchmarks\n";
+  std::cout << "     " << termcolor::bold << program_name << termcolor::reset << " -- Run Criterion benchmarks\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
-  std::cout << termcolor::bold << "     criterion " << termcolor::reset 
+  std::cout << termcolor::bold << "     " << program_name << " " << termcolor::reset 
             << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset 
             << " {csv,json,md,asciidoc} <filename>]\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
-  std::cout << "     The " << termcolor::bold << "criterion" << termcolor::reset 
+  std::cout << "     The " << termcolor::bold << program_name << termcolor::reset 
             << " microbenchmarking utility repeatedly executes a list of registered functions,\n     statistically analyzing the temporal behavior of code\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
