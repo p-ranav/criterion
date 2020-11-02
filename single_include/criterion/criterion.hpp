@@ -2650,7 +2650,6 @@ public:
 
 } // namespace indicators
 
-
 #pragma once
 #include <chrono>
 #include <functional>
@@ -2708,26 +2707,18 @@ struct benchmark_result {
     std::stringstream os;
 
     os << '"' << name << "\",";
-    os << std::fixed << std::setprecision(2)
-       << num_warmup_runs << ','
-       << num_runs * num_iterations << ','
-       << mean_execution_time << ','
-       << fastest_execution_time << ','
-       << slowest_execution_time << ','
-       << lowest_rsd_mean << ','
-       << lowest_rsd << ','
-       << lowest_rsd_index << ','
-       << average_iteration_performance << ','
-       << fastest_iteration_performance << ','
-       << slowest_iteration_performance;
+    os << std::fixed << std::setprecision(2) << num_warmup_runs << ',' << num_runs * num_iterations
+       << ',' << mean_execution_time << ',' << fastest_execution_time << ','
+       << slowest_execution_time << ',' << lowest_rsd_mean << ',' << lowest_rsd << ','
+       << lowest_rsd_index << ',' << average_iteration_performance << ','
+       << fastest_iteration_performance << ',' << slowest_iteration_performance;
 
     return os.str();
   }
 
   std::string to_json() const {
     std::stringstream os;
-    os << std::fixed << std::setprecision(2)
-       << "    {\n"
+    os << std::fixed << std::setprecision(2) << "    {\n"
        << "      \"name\": \"" << name << "\",\n"
        << "      \"warmup_runs\": " << num_warmup_runs << ",\n"
        << "      \"iterations\": " << num_runs * num_iterations << ",\n"
@@ -2747,14 +2738,11 @@ struct benchmark_result {
 
   std::string to_md() const {
     std::stringstream os;
-    os << std::fixed;
-    os << "|" << name;
-    os << "|" << num_warmup_runs;
-    os << "|" << num_runs * num_iterations;
-    os << "|" << std::setprecision(0) << mean_execution_time;
-    os << "|" << std::setprecision(2) << lowest_rsd;
-    os << "|" << std::setprecision(0) << fastest_execution_time;
-    os << "|" << std::setprecision(0) << slowest_execution_time;
+    os << std::fixed << std::setprecision(2) << "|" << name << "|" << num_warmup_runs << "|"
+       << num_runs * num_iterations << "|" << mean_execution_time << "|" << fastest_execution_time
+       << "|" << slowest_execution_time << "|" << lowest_rsd_mean << "|" << lowest_rsd << "|"
+       << lowest_rsd_index << "|" << average_iteration_performance << "|"
+       << fastest_iteration_performance << "|" << slowest_iteration_performance << "|\n";
     return os.str();
   }
 };
@@ -2808,8 +2796,8 @@ public:
               << termcolor::reset << "\n";
 
     std::cout << "      " << result.num_warmup_runs << " warmup runs, " << result.num_runs
-              << (result.num_runs > 1 ? " benchmark runs, " : " benchmark run, ") << result.num_iterations
-              << " iterations per run\n";
+              << (result.num_runs > 1 ? " benchmark runs, " : " benchmark run, ")
+              << result.num_iterations << " iterations per run\n";
 
     std::cout << "    " << termcolor::bold << termcolor::underline << "Execution Time"
               << termcolor::reset << "\n";
@@ -2915,26 +2903,18 @@ struct benchmark_result {
     std::stringstream os;
 
     os << '"' << name << "\",";
-    os << std::fixed << std::setprecision(2)
-       << num_warmup_runs << ','
-       << num_runs * num_iterations << ','
-       << mean_execution_time << ','
-       << fastest_execution_time << ','
-       << slowest_execution_time << ','
-       << lowest_rsd_mean << ','
-       << lowest_rsd << ','
-       << lowest_rsd_index << ','
-       << average_iteration_performance << ','
-       << fastest_iteration_performance << ','
-       << slowest_iteration_performance;
+    os << std::fixed << std::setprecision(2) << num_warmup_runs << ',' << num_runs * num_iterations
+       << ',' << mean_execution_time << ',' << fastest_execution_time << ','
+       << slowest_execution_time << ',' << lowest_rsd_mean << ',' << lowest_rsd << ','
+       << lowest_rsd_index << ',' << average_iteration_performance << ','
+       << fastest_iteration_performance << ',' << slowest_iteration_performance;
 
     return os.str();
   }
 
   std::string to_json() const {
     std::stringstream os;
-    os << std::fixed << std::setprecision(2)
-       << "    {\n"
+    os << std::fixed << std::setprecision(2) << "    {\n"
        << "      \"name\": \"" << name << "\",\n"
        << "      \"warmup_runs\": " << num_warmup_runs << ",\n"
        << "      \"iterations\": " << num_runs * num_iterations << ",\n"
@@ -2954,14 +2934,11 @@ struct benchmark_result {
 
   std::string to_md() const {
     std::stringstream os;
-    os << std::fixed;
-    os << "|" << name;
-    os << "|" << num_warmup_runs;
-    os << "|" << num_runs * num_iterations;
-    os << "|" << std::setprecision(0) << mean_execution_time;
-    os << "|" << std::setprecision(2) << lowest_rsd;
-    os << "|" << std::setprecision(0) << fastest_execution_time;
-    os << "|" << std::setprecision(0) << slowest_execution_time;
+    os << std::fixed << std::setprecision(2) << "|" << name << "|" << num_warmup_runs << "|"
+       << num_runs * num_iterations << "|" << mean_execution_time << "|" << fastest_execution_time
+       << "|" << slowest_execution_time << "|" << lowest_rsd_mean << "|" << lowest_rsd << "|"
+       << lowest_rsd_index << "|" << average_iteration_performance << "|"
+       << fastest_iteration_performance << "|" << slowest_iteration_performance << "|\n";
     return os.str();
   }
 };
@@ -3271,7 +3248,10 @@ public:
     bool result{false};
     std::ofstream os(filename);
     if (os.is_open()) {
-      os << "name,warmup_runs,iterations,mean_execution_time,fastest_execution_time,slowest_execution_time,lowest_rsd_execution_time,lowest_rsd_percentage,lowest_rsd_index,average_iteration_performance,fastest_iteration_performance,slowest_iteration_performance\n";
+      os << "name,warmup_runs,iterations,mean_execution_time,fastest_execution_time,slowest_"
+            "execution_time,lowest_rsd_execution_time,lowest_rsd_percentage,lowest_rsd_index,"
+            "average_iteration_performance,fastest_iteration_performance,slowest_iteration_"
+            "performance\n";
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto &this_result = results.at(name);
         os << this_result.to_csv() << "\n";
@@ -3348,15 +3328,18 @@ public:
     std::ofstream os(filename);
     if (os.is_open()) {
 
-      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) "
-            "| Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
-      os << "|------|------------:|-----------:|-------------------------:|----------------------:|"
-            "---------------------------------:|----------------------------------:|\n";
+      os << "|Name            |Warmup Runs|Iterations|Mean Execution Time (ns)|Fastest Execution "
+            "Time (ns)|Slowest Execution Time (ns)|Lowest RSD Execution Time (ns)|Lowest RSD "
+            "(%)|Lowest RSD Index|Average Iteration Performance (iterations/s)|Fastest Iteration "
+            "Performance (iterations/s)|Slowest Iteration Performance (iterations/s)|\n";
+      os << "|:---------------|----------:|---------:|-----------------------:|--------------------"
+            "------:|--------------------------:|-----------------------------:|-------------:|----"
+            "-----------:|-------------------------------------------:|----------------------------"
+            "---------------:|-------------------------------------------:|\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto &this_result = results.at(name);
         os << this_result.to_md();
-        os << "\n";
       }
       result = true;
     }
@@ -4002,7 +3985,6 @@ struct benchmark_template_registration_helper_struct {
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
-
 
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
@@ -6943,7 +6925,6 @@ public:
 
 } // namespace structopt
 
-
 #pragma once
 // #include <criterion/details/indicators.hpp>
 #include <sstream>
@@ -6956,9 +6937,8 @@ static inline void print_criterion_help(const std::string &program_name) {
             << " -- Run Criterion benchmarks\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
-  std::cout << termcolor::bold << "     " << program_name 
-            << "\n           "
-            << termcolor::reset << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
+  std::cout << termcolor::bold << "     " << program_name << "\n           " << termcolor::reset
+            << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
             << termcolor::reset << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
@@ -6982,8 +6962,8 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout
       << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset
-            << termcolor::underline << "regex" << termcolor::reset << "\n";
+  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset << termcolor::underline
+            << "regex" << termcolor::reset << "\n";
   std::cout
       << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
@@ -7063,7 +7043,8 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help, remaining);
+STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help,
+          remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];
@@ -7140,4 +7121,3 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
-

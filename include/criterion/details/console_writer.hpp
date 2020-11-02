@@ -49,8 +49,8 @@ public:
               << termcolor::reset << "\n";
 
     std::cout << "      " << result.num_warmup_runs << " warmup runs, " << result.num_runs
-              << (result.num_runs > 1 ? " benchmark runs, " : " benchmark run, ") << result.num_iterations
-              << " iterations per run\n";
+              << (result.num_runs > 1 ? " benchmark runs, " : " benchmark run, ")
+              << result.num_iterations << " iterations per run\n";
 
     std::cout << "    " << termcolor::bold << termcolor::underline << "Execution Time"
               << termcolor::reset << "\n";

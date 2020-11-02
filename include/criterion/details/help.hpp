@@ -10,9 +10,8 @@ static inline void print_criterion_help(const std::string &program_name) {
             << " -- Run Criterion benchmarks\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
-  std::cout << termcolor::bold << "     " << program_name 
-            << "\n           "
-            << termcolor::reset << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
+  std::cout << termcolor::bold << "     " << program_name << "\n           " << termcolor::reset
+            << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
             << termcolor::reset << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
@@ -36,8 +35,8 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout
       << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset
-            << termcolor::underline << "regex" << termcolor::reset << "\n";
+  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset << termcolor::underline
+            << "regex" << termcolor::reset << "\n";
   std::cout
       << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";

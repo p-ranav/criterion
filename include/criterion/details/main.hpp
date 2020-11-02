@@ -55,7 +55,8 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help, remaining);
+STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help,
+          remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];

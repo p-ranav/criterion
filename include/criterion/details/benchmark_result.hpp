@@ -27,26 +27,18 @@ struct benchmark_result {
     std::stringstream os;
 
     os << '"' << name << "\",";
-    os << std::fixed << std::setprecision(2)
-       << num_warmup_runs << ','
-       << num_runs * num_iterations << ','
-       << mean_execution_time << ','
-       << fastest_execution_time << ','
-       << slowest_execution_time << ','
-       << lowest_rsd_mean << ','
-       << lowest_rsd << ','
-       << lowest_rsd_index << ','
-       << average_iteration_performance << ','
-       << fastest_iteration_performance << ','
-       << slowest_iteration_performance;
+    os << std::fixed << std::setprecision(2) << num_warmup_runs << ',' << num_runs * num_iterations
+       << ',' << mean_execution_time << ',' << fastest_execution_time << ','
+       << slowest_execution_time << ',' << lowest_rsd_mean << ',' << lowest_rsd << ','
+       << lowest_rsd_index << ',' << average_iteration_performance << ','
+       << fastest_iteration_performance << ',' << slowest_iteration_performance;
 
     return os.str();
   }
 
   std::string to_json() const {
     std::stringstream os;
-    os << std::fixed << std::setprecision(2)
-       << "    {\n"
+    os << std::fixed << std::setprecision(2) << "    {\n"
        << "      \"name\": \"" << name << "\",\n"
        << "      \"warmup_runs\": " << num_warmup_runs << ",\n"
        << "      \"iterations\": " << num_runs * num_iterations << ",\n"
@@ -66,14 +58,11 @@ struct benchmark_result {
 
   std::string to_md() const {
     std::stringstream os;
-    os << std::fixed;
-    os << "|" << name;
-    os << "|" << num_warmup_runs;
-    os << "|" << num_runs * num_iterations;
-    os << "|" << std::setprecision(0) << mean_execution_time;
-    os << "|" << std::setprecision(2) << lowest_rsd;
-    os << "|" << std::setprecision(0) << fastest_execution_time;
-    os << "|" << std::setprecision(0) << slowest_execution_time;
+    os << std::fixed << std::setprecision(2) << "|" << name << "|" << num_warmup_runs << "|"
+       << num_runs * num_iterations << "|" << mean_execution_time << "|" << fastest_execution_time
+       << "|" << slowest_execution_time << "|" << lowest_rsd_mean << "|" << lowest_rsd << "|"
+       << lowest_rsd_index << "|" << average_iteration_performance << "|"
+       << fastest_iteration_performance << "|" << slowest_iteration_performance << "|\n";
     return os.str();
   }
 };
