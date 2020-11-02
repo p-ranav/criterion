@@ -2719,7 +2719,7 @@ struct benchmark_result {
     os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
     os << "      \"benchmark_runs\": " << num_runs << ",\n";
     os << "      \"iterations_per_run\": " << num_iterations << ",\n";
-    os << "      \"best_estimate_mean\": " << std::setprecision(0) << best_estimate_mean << ",\n";
+    os << "      \"best_estimate_mean_execution_time\": " << std::setprecision(0) << best_estimate_mean << ",\n";
     os << "      \"best_estimate_rsd\": " << std::setprecision(2) << best_estimate_rsd << ",\n";
     os << "      \"overall_best_execution_time\": " << std::setprecision(0) << overall_best_execution_time << ",\n";
     os << "      \"overall_worst_execution_time\": " << std::setprecision(0) << overall_worst_execution_time << "\n";
@@ -2736,7 +2736,7 @@ struct benchmark_result {
     os << "|" << num_runs;
     os << "|" << num_iterations;
     os << "|" << std::setprecision(0) << best_estimate_mean;
-    os << "|" << std::setprecision(2) << best_estimate_rsd << "%";
+    os << "|" << std::setprecision(2) << best_estimate_rsd;
     os << "|" << std::setprecision(0) << overall_best_execution_time;
     os << "|" << std::setprecision(0) << overall_worst_execution_time;
     return os.str();
@@ -3019,7 +3019,7 @@ public:
     bool result{false};
     std::ofstream os(filename);
     if (os.is_open()) {
-      os << "name,warmup_runs,benchmark_runs,iterations_per_run,best_estimate_mean,best_estimate_rsd,overall_best_execution_time,overall_worst_execution_time\n";
+      os << "name,warmup_runs,benchmark_runs,iterations_per_run,best_estimate_mean_execution_time,best_estimate_rsd,overall_best_execution_time,overall_worst_execution_time\n";
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
         os << this_result.to_csv() << "\n";
@@ -3096,8 +3096,8 @@ public:
     std::ofstream os(filename);
     if (os.is_open()) {
 
-      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
-      os << "|------|------------:|---------------:|----------------------:|------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
+      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
+      os << "|------|------------:|---------------:|----------------------:|---------------------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
@@ -3137,7 +3137,7 @@ public:
       os << ".Criterion Benchmark Results (" << std::put_time(std::gmtime(&t), "%c %Z") << ")\n";
       os << "[cols=\"<,>,>,>,>,>,>,>\", options=\"header\"]\n";
       os << "|=====================================================================================================================================================================================\n";
-      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
+      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
