@@ -2650,6 +2650,7 @@ public:
 
 } // namespace indicators
 
+
 #pragma once
 #include <chrono>
 #include <functional>
@@ -2678,10 +2679,6 @@ struct benchmark_config {
 
 #pragma once
 #include <array>
-#include <iomanip>
-#include <sstream>
-#include <string>
-// #include <criterion/details/indicators.hpp>
 // #include <criterion/details/benchmark_result.hpp>
 #include <sstream>
 #include <string>
@@ -2751,6 +2748,10 @@ struct benchmark_result {
 };
 
 } // namespace criterion
+// #include <criterion/details/indicators.hpp>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 namespace criterion {
 
@@ -2961,8 +2962,8 @@ struct benchmark_result {
 
 // #include <criterion/details/benchmark_config.hpp>
 // #include <criterion/details/benchmark_result.hpp>
-// #include <criterion/details/indicators.hpp>
 // #include <criterion/details/console_writer.hpp>
+// #include <criterion/details/indicators.hpp>
 
 namespace criterion {
 
@@ -3203,11 +3204,12 @@ public:
 
     results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
 
-    // bar.set_option(option::ForegroundColor(Color::green));
-    // bar.set_option(option::PrefixText{" ✓ " + benchmark_instance_name + " "});
     bar.set_progress(total_number_of_iterations);
     bar.mark_as_completed();
-    std::cout << std::flush;
+
+    // Show console cursor
+    show_console_cursor(true);
+
     console_writer::write_result(benchmark_result);
   }
 };
@@ -3215,8 +3217,8 @@ public:
 } // namespace criterion
 
 #pragma once
-// #include <criterion/details/benchmark_result.hpp>
 // #include <criterion/details/benchmark.hpp>
+// #include <criterion/details/benchmark_result.hpp>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -3248,8 +3250,8 @@ public:
 } // namespace criterion
 
 #pragma once
-// #include <criterion/details/benchmark_result.hpp>
 // #include <criterion/details/benchmark.hpp>
+// #include <criterion/details/benchmark_result.hpp>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -3292,8 +3294,8 @@ public:
 } // namespace criterion
 
 #pragma once
-// #include <criterion/details/benchmark_result.hpp>
 // #include <criterion/details/benchmark.hpp>
+// #include <criterion/details/benchmark_result.hpp>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -3330,8 +3332,8 @@ public:
 } // namespace criterion
 
 #pragma once
-// #include <criterion/details/benchmark_result.hpp>
 // #include <criterion/details/benchmark.hpp>
+// #include <criterion/details/benchmark_result.hpp>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
@@ -3964,6 +3966,7 @@ struct benchmark_template_registration_helper_struct {
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
+
 
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
@@ -6904,10 +6907,11 @@ public:
 
 } // namespace structopt
 
+
 #pragma once
+// #include <criterion/details/indicators.hpp>
 #include <sstream>
 #include <string>
-// #include <criterion/details/indicators.hpp>
 
 static inline void print_criterion_help(const std::string &program_name) {
   std::cout << "\n";
@@ -6963,17 +6967,18 @@ static inline void print_criterion_help(const std::string &program_name) {
 }
 
 #pragma once
-#include <cstring>
-// #include <criterion/details/indicators.hpp>
-// #include <criterion/details/macros.hpp>
-// #include <criterion/details/structopt.hpp>
-// #include <criterion/details/help.hpp>
-// #include <criterion/details/csv_writer.hpp>
-// #include <criterion/details/json_writer.hpp>
-// #include <criterion/details/md_writer.hpp>
 // #include <criterion/details/asciidoc_writer.hpp>
+// #include <criterion/details/csv_writer.hpp>
+// #include <criterion/details/help.hpp>
+// #include <criterion/details/indicators.hpp>
+// #include <criterion/details/json_writer.hpp>
+// #include <criterion/details/macros.hpp>
+// #include <criterion/details/md_writer.hpp>
+// #include <criterion/details/structopt.hpp>
+#include <cstring>
 
 static inline void signal_handler(int signal) {
+  indicators::show_console_cursor(true);
   std::cout << termcolor::reset;
   exit(signal);
 }
@@ -7090,3 +7095,4 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
+

@@ -260,8 +260,6 @@ public:
 
     results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
 
-    // bar.set_option(option::ForegroundColor(Color::green));
-    // bar.set_option(option::PrefixText{" ✓ " + benchmark_instance_name + " "});
     bar.set_progress(total_number_of_iterations);
     bar.mark_as_completed();
 
