@@ -22,9 +22,7 @@ struct benchmark_result {
     os << std::fixed
        << num_warmup_runs 
        << ','
-       << num_runs
-       << ','
-       << num_iterations
+       << num_runs * num_iterations
        << ','
        << std::setprecision(0) << best_estimate_mean
        << ','
@@ -43,8 +41,7 @@ struct benchmark_result {
     os << "    {\n";
     os << "      \"name\": \"" << name << "\",\n";
     os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
-    os << "      \"benchmark_runs\": " << num_runs << ",\n";
-    os << "      \"iterations_per_run\": " << num_iterations << ",\n";
+    os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
     os << "      \"best_estimate_mean_execution_time\": " << std::setprecision(0) << best_estimate_mean << ",\n";
     os << "      \"best_estimate_rsd\": " << std::setprecision(2) << best_estimate_rsd << ",\n";
     os << "      \"overall_best_execution_time\": " << std::setprecision(0) << overall_best_execution_time << ",\n";
@@ -59,8 +56,7 @@ struct benchmark_result {
     os << std::fixed;
     os << "|" << name;
     os << "|" << num_warmup_runs;
-    os << "|" << num_runs;
-    os << "|" << num_iterations;
+    os << "|" << num_runs * num_iterations;
     os << "|" << std::setprecision(0) << best_estimate_mean;
     os << "|" << std::setprecision(2) << best_estimate_rsd;
     os << "|" << std::setprecision(0) << overall_best_execution_time;

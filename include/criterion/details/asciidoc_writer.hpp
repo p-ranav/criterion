@@ -20,16 +20,16 @@ public:
 
       std::time_t t = std::time(nullptr);
       os << ".Criterion Benchmark Results (" << std::put_time(std::gmtime(&t), "%c %Z") << ")\n";
-      os << "[cols=\"<,>,>,>,>,>,>,>\", options=\"header\"]\n";
-      os << "|=====================================================================================================================================================================================\n";
-      os << "| Name | Warmup Runs | Benchmark Runs | Iterations per Second | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
+      os << "[cols=\"<,>,>,>,>,>,>\", options=\"header\"]\n";
+      os << "|========================================================================================================================================================================\n";
+      os << "| Name | Warmup Runs | Iterations | Best Estimate Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto& this_result = results.at(name);
         os << this_result.to_md();
         os << "\n";
       }
-      os << "|======================================================================================================================================================================================\n";
+      os << "|========================================================================================================================================================================\n";
       result = true;
     }
     os.close();
