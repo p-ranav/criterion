@@ -2718,18 +2718,21 @@ struct benchmark_result {
 
   std::string to_json() const {
     std::stringstream os;
-    os << std::fixed;
-    os << "    {\n";
-    os << "      \"name\": \"" << name << "\",\n";
-    os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
-    os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
-    os << "      \"mean_execution_time\": " << std::setprecision(0) << mean_execution_time << ",\n";
-    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << lowest_rsd << ",\n";
-    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time
-       << ",\n";
-    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time
-       << "\n";
-    os << "    }";
+    os << std::fixed << std::setprecision(2)
+       << "    {\n"
+       << "      \"name\": \"" << name << "\",\n"
+       << "      \"warmup_runs\": " << num_warmup_runs << ",\n"
+       << "      \"iterations\": " << num_runs * num_iterations << ",\n"
+       << "      \"mean_execution_time\": " << mean_execution_time << ",\n"
+       << "      \"fastest_execution_time\": " << fastest_execution_time << ",\n"
+       << "      \"slowest_execution_time\": " << slowest_execution_time << "\n"
+       << "      \"lowest_rsd_execution_time\": " << lowest_rsd_mean << ",\n"
+       << "      \"lowest_rsd_percentage\": " << lowest_rsd << ",\n"
+       << "      \"lowest_rsd_index\": " << lowest_rsd_index << ",\n"
+       << "      \"average_iteration_performance\": " << average_iteration_performance << ",\n"
+       << "      \"fastest_iteration_performance\": " << fastest_iteration_performance << ",\n"
+       << "      \"slowest_iteration_performance\": " << slowest_iteration_performance << "\n"
+       << "    }";
 
     return os.str();
   }
@@ -2914,18 +2917,21 @@ struct benchmark_result {
 
   std::string to_json() const {
     std::stringstream os;
-    os << std::fixed;
-    os << "    {\n";
-    os << "      \"name\": \"" << name << "\",\n";
-    os << "      \"warmup_runs\": " << num_warmup_runs << ",\n";
-    os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
-    os << "      \"mean_execution_time\": " << std::setprecision(0) << mean_execution_time << ",\n";
-    os << "      \"best_estimate_rsd\": " << std::setprecision(2) << lowest_rsd << ",\n";
-    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time
-       << ",\n";
-    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time
-       << "\n";
-    os << "    }";
+    os << std::fixed << std::setprecision(2)
+       << "    {\n"
+       << "      \"name\": \"" << name << "\",\n"
+       << "      \"warmup_runs\": " << num_warmup_runs << ",\n"
+       << "      \"iterations\": " << num_runs * num_iterations << ",\n"
+       << "      \"mean_execution_time\": " << mean_execution_time << ",\n"
+       << "      \"fastest_execution_time\": " << fastest_execution_time << ",\n"
+       << "      \"slowest_execution_time\": " << slowest_execution_time << "\n"
+       << "      \"lowest_rsd_execution_time\": " << lowest_rsd_mean << ",\n"
+       << "      \"lowest_rsd_percentage\": " << lowest_rsd << ",\n"
+       << "      \"lowest_rsd_index\": " << lowest_rsd_index << ",\n"
+       << "      \"average_iteration_performance\": " << average_iteration_performance << ",\n"
+       << "      \"fastest_iteration_performance\": " << fastest_iteration_performance << ",\n"
+       << "      \"slowest_iteration_performance\": " << slowest_iteration_performance << "\n"
+       << "    }";
 
     return os.str();
   }
