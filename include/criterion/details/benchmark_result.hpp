@@ -62,7 +62,7 @@ struct benchmark_result {
        << num_runs * num_iterations << "|" << mean_execution_time << "|" << fastest_execution_time
        << "|" << slowest_execution_time << "|" << lowest_rsd_mean << "|" << lowest_rsd << "|"
        << lowest_rsd_index << "|" << average_iteration_performance << "|"
-       << fastest_iteration_performance << "|" << slowest_iteration_performance << "|\n";
+       << fastest_iteration_performance << "|" << slowest_iteration_performance << "\n";
     return os.str();
   }
 };

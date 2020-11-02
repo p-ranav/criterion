@@ -2650,6 +2650,7 @@ public:
 
 } // namespace indicators
 
+
 #pragma once
 #include <chrono>
 #include <functional>
@@ -2742,7 +2743,7 @@ struct benchmark_result {
        << num_runs * num_iterations << "|" << mean_execution_time << "|" << fastest_execution_time
        << "|" << slowest_execution_time << "|" << lowest_rsd_mean << "|" << lowest_rsd << "|"
        << lowest_rsd_index << "|" << average_iteration_performance << "|"
-       << fastest_iteration_performance << "|" << slowest_iteration_performance << "|\n";
+       << fastest_iteration_performance << "|" << slowest_iteration_performance << "\n";
     return os.str();
   }
 };
@@ -2938,7 +2939,7 @@ struct benchmark_result {
        << num_runs * num_iterations << "|" << mean_execution_time << "|" << fastest_execution_time
        << "|" << slowest_execution_time << "|" << lowest_rsd_mean << "|" << lowest_rsd << "|"
        << lowest_rsd_index << "|" << average_iteration_performance << "|"
-       << fastest_iteration_performance << "|" << slowest_iteration_performance << "|\n";
+       << fastest_iteration_performance << "|" << slowest_iteration_performance << "\n";
     return os.str();
   }
 };
@@ -3372,19 +3373,18 @@ public:
 
       std::time_t t = std::time(nullptr);
       os << ".Criterion Benchmark Results (" << std::put_time(std::gmtime(&t), "%c %Z") << ")\n";
-      os << "[cols=\"<,>,>,>,>,>,>\", options=\"header\"]\n";
-      os << "|====================================================================================="
-            "=====================================================================\n";
-      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) "
-            "| Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
+      os << "[cols=\"<,>,>,>,>,>,>,>,>,>,>,>\", options=\"header\"]\n";
+      os << "|===\n";
+      os << "|Name            |Warmup Runs|Iterations|Mean Execution Time (ns)|Fastest Execution "
+            "Time (ns)|Slowest Execution Time (ns)|Lowest RSD Execution Time (ns)|Lowest RSD "
+            "(%)|Lowest RSD Index|Average Iteration Performance (iterations/s)|Fastest Iteration "
+            "Performance (iterations/s)|Slowest Iteration Performance (iterations/s)\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
         const auto &this_result = results.at(name);
         os << this_result.to_md();
-        os << "\n";
       }
-      os << "|====================================================================================="
-            "=====================================================================\n";
+      os << "|===\n";
       result = true;
     }
     os.close();
@@ -3985,6 +3985,7 @@ struct benchmark_template_registration_helper_struct {
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
+
 
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
@@ -6925,6 +6926,7 @@ public:
 
 } // namespace structopt
 
+
 #pragma once
 // #include <criterion/details/indicators.hpp>
 #include <sstream>
@@ -7121,3 +7123,4 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
+
