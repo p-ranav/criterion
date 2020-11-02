@@ -10,6 +10,7 @@ static inline void print_criterion_help(const std::string& program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
   std::cout << termcolor::bold << "     " << program_name << " " << termcolor::reset 
+            << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset 
             << " {csv,json,md,asciidoc} <filename>]\n";
   std::cout << "\n";
@@ -18,6 +19,9 @@ static inline void print_criterion_help(const std::string& program_name) {
             << " microbenchmarking utility repeatedly executes a list of registered functions,\n     statistically analyzing the temporal behavior of code\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
+  std::cout << "          Print the list of available benchmarks\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -e,--export_results " << termcolor::reset 
             << termcolor::underline << "format" << termcolor::reset

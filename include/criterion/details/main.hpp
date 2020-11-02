@@ -1,4 +1,5 @@
 #pragma once
+#include <cstring>
 #include <criterion/details/termcolor.hpp>
 #include <criterion/details/macros.hpp>
 #include <criterion/details/structopt.hpp>
@@ -25,10 +26,10 @@ struct options {
 
     // Export filename
     std::string filename;
-
-    // Prints help
-    std::optional<bool> help = false;
   };
+
+  // Lists available benchmarks
+  std::optional<bool> list = false;
 
   // --export_results csv result.csv
   // --export_results json foo.json
@@ -44,7 +45,7 @@ struct options {
 }
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, export_results, help, remaining);
+STRUCTOPT(criterion::options, list, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) { 
   const auto program_name = argv[0];
@@ -59,8 +60,12 @@ static inline int criterion_main(int argc, char *argv[]) {
   try {
     auto options = structopt::app(program_name).parse<criterion::options>(argc, argv);
 
-    if (options.help.value() == true || (options.export_results.has_value() && options.export_results.value().help.value() == true)) {
+    if (options.help.value() == true) {
       print_criterion_help(program_name);
+      exit(0);
+    }
+    else if (options.list.value() == true) {
+      criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
       exit(0);
     }
     else if (!options.remaining.empty()) {
@@ -96,7 +101,9 @@ static inline int criterion_main(int argc, char *argv[]) {
     }
 
   } catch (structopt::exception& e) {
-    std::cout << termcolor::bold << termcolor::red << e.what() << termcolor::reset << "\n";
+    const auto message = e.what();
+    if (message && std::strlen(message) > 0)
+      std::cout << termcolor::bold << termcolor::red << message << termcolor::reset << "\n";
     print_criterion_help(program_name);
     exit(1);
   }                                                      

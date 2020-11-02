@@ -25,6 +25,12 @@ struct benchmark_registration_helper_struct {
       benchmark{config}.run();
     }
   }
+
+  static void list_registered_benchmarks() {
+    for (const auto &config : registered_benchmarks()) {
+      std::cout << config.name << config.parameterized_instance_name << "\n";
+    }
+  }
 };
 
 } // namespace criterion
