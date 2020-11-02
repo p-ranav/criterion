@@ -11,8 +11,9 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
   std::cout << termcolor::bold << "     " << program_name 
-            << "\n           " << termcolor::reset << "["
-            << termcolor::bold << "-l,--list" << termcolor::reset << "] "
+            << "\n           "
+            << termcolor::reset << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
+            << termcolor::reset << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
             << "\n           [" << termcolor::bold << "-e,--export_results" << termcolor::reset
@@ -23,6 +24,9 @@ static inline void print_criterion_help(const std::string &program_name) {
                "  statistically analyzing the temporal behavior of code.\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     -q,--quiet " << termcolor::reset << "\n";
+  std::cout << "          Run benchmarks quietly, suppressing activity indicators\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";

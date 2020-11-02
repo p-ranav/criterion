@@ -29,6 +29,9 @@ struct options {
     std::string filename;
   };
 
+  // Run benchmarks quietly
+  std::optional<bool> quiet = false;
+
   // List available benchmarks
   std::optional<bool> list = false;
 
@@ -52,7 +55,7 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, list, list_filtered, run_filtered, export_results, help, remaining);
+STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];
@@ -70,6 +73,8 @@ static inline int criterion_main(int argc, char *argv[]) {
     if (options.help.value() == true) {
       print_criterion_help(program_name);
       exit(0);
+    } else if (options.quiet.value() == true) {
+      criterion::benchmark::show_console_output = false;
     } else if (options.list.value() == true) {
       criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
       exit(0);

@@ -2975,7 +2975,7 @@ class benchmark {
   benchmark_config config_;
   using Fn = benchmark_config::Fn;
 
-  std::size_t warmup_runs_{3};
+  std::size_t warmup_runs_{2};
   static inline constexpr std::size_t num_iterations_{20};
   std::size_t max_num_runs_{0};
   const long double ten_seconds_{1e+10};
@@ -3004,20 +3004,18 @@ class benchmark {
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
-      for (std::size_t j = 0; j < num_iterations_; j++) {
-        std::chrono::steady_clock::time_point start_timestamp;
-        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-        const auto start = steady_clock::now();
-        config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
-        const auto end = steady_clock::now();
-        const auto execution_time =
-            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-        if (first_run) {
-          result = execution_time;
-          first_run = false;
-        } else {
-          result = std::min(execution_time, result);
-        }
+      std::chrono::steady_clock::time_point start_timestamp;
+      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+      const auto start = steady_clock::now();
+      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
+      const auto end = steady_clock::now();
+      const auto execution_time =
+          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      if (first_run) {
+        result = execution_time;
+        first_run = false;
+      } else {
+        result = std::min(execution_time, result);
       }
     }
     return result;
@@ -3056,6 +3054,7 @@ public:
 
   static inline std::unordered_map<std::string, benchmark_result> results;
   static inline std::vector<std::string> benchmark_execution_order;
+  static inline bool show_console_output = true;
 
   void run() {
     std::chrono::steady_clock::time_point benchmark_start_timestamp;
@@ -3090,7 +3089,9 @@ public:
     using namespace indicators;
 
     // Hide cursor
-    show_console_cursor(false);
+    if (show_console_output) {
+      show_console_cursor(false);
+    }
 
     BlockProgressBar bar{option::BarWidth{50},
                          option::Start{"["},
@@ -3117,7 +3118,9 @@ public:
           end = teardown_timestamp.value();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
         durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
-        bar.tick();
+        if (show_console_output) {
+          bar.tick();
+        }
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
@@ -3185,9 +3188,11 @@ public:
       if (elapsed_time > benchmark_time_) {
         break;
       } else {
-        const auto percentage_completed = elapsed_time / benchmark_time_;
-        const auto new_bar_progress = percentage_completed * total_number_of_iterations;
-        bar.set_progress(new_bar_progress);
+        if (show_console_output) {
+          const auto percentage_completed = elapsed_time / benchmark_time_;
+          const auto new_bar_progress = percentage_completed * total_number_of_iterations;
+          bar.set_progress(new_bar_progress);
+        }
       }
     }
 
@@ -3212,13 +3217,15 @@ public:
 
     results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
 
-    bar.set_progress(total_number_of_iterations);
-    bar.mark_as_completed();
+    if (show_console_output) {
+      bar.set_progress(total_number_of_iterations);
+      bar.mark_as_completed();
 
-    // Show console cursor
-    show_console_cursor(true);
+      // Show console cursor
+      show_console_cursor(true);
 
-    console_writer::write_result(benchmark_result);
+      console_writer::write_result(benchmark_result);
+    }
   }
 };
 
@@ -6929,8 +6936,9 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout << "\n";
   std::cout << termcolor::bold << "SYNOPSIS\n" << termcolor::reset;
   std::cout << termcolor::bold << "     " << program_name 
-            << "\n           " << termcolor::reset << "["
-            << termcolor::bold << "-l,--list" << termcolor::reset << "] "
+            << "\n           "
+            << termcolor::reset << "[" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
+            << termcolor::reset << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
             << "\n           [" << termcolor::bold << "-e,--export_results" << termcolor::reset
@@ -6941,6 +6949,9 @@ static inline void print_criterion_help(const std::string &program_name) {
                "  statistically analyzing the temporal behavior of code.\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     -q,--quiet " << termcolor::reset << "\n";
+  std::cout << "          Run benchmarks quietly, suppressing activity indicators\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";
@@ -7005,6 +7016,9 @@ struct options {
     std::string filename;
   };
 
+  // Run benchmarks quietly
+  std::optional<bool> quiet = false;
+
   // List available benchmarks
   std::optional<bool> list = false;
 
@@ -7028,7 +7042,7 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, list, list_filtered, run_filtered, export_results, help, remaining);
+STRUCTOPT(criterion::options, quiet, list, list_filtered, run_filtered, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];
@@ -7046,6 +7060,8 @@ static inline int criterion_main(int argc, char *argv[]) {
     if (options.help.value() == true) {
       print_criterion_help(program_name);
       exit(0);
+    } else if (options.quiet.value() == true) {
+      criterion::benchmark::show_console_output = false;
     } else if (options.list.value() == true) {
       criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
       exit(0);

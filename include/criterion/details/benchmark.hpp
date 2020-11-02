@@ -27,7 +27,7 @@ class benchmark {
   benchmark_config config_;
   using Fn = benchmark_config::Fn;
 
-  std::size_t warmup_runs_{3};
+  std::size_t warmup_runs_{2};
   static inline constexpr std::size_t num_iterations_{20};
   std::size_t max_num_runs_{0};
   const long double ten_seconds_{1e+10};
@@ -56,20 +56,18 @@ class benchmark {
     long double result;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs_; i++) {
-      for (std::size_t j = 0; j < num_iterations_; j++) {
-        std::chrono::steady_clock::time_point start_timestamp;
-        std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
-        const auto start = steady_clock::now();
-        config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
-        const auto end = steady_clock::now();
-        const auto execution_time =
-            static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
-        if (first_run) {
-          result = execution_time;
-          first_run = false;
-        } else {
-          result = std::min(execution_time, result);
-        }
+      std::chrono::steady_clock::time_point start_timestamp;
+      std::optional<std::chrono::steady_clock::time_point> teardown_timestamp;
+      const auto start = steady_clock::now();
+      config_.fn(start_timestamp, teardown_timestamp, config_.parameters);
+      const auto end = steady_clock::now();
+      const auto execution_time =
+          static_cast<long double>(duration_cast<std::chrono::nanoseconds>(end - start).count());
+      if (first_run) {
+        result = execution_time;
+        first_run = false;
+      } else {
+        result = std::min(execution_time, result);
       }
     }
     return result;
@@ -108,6 +106,7 @@ public:
 
   static inline std::unordered_map<std::string, benchmark_result> results;
   static inline std::vector<std::string> benchmark_execution_order;
+  static inline bool show_console_output = true;
 
   void run() {
     std::chrono::steady_clock::time_point benchmark_start_timestamp;
@@ -142,7 +141,9 @@ public:
     using namespace indicators;
 
     // Hide cursor
-    show_console_cursor(false);
+    if (show_console_output) {
+      show_console_cursor(false);
+    }
 
     BlockProgressBar bar{option::BarWidth{50},
                          option::Start{"["},
@@ -169,7 +170,9 @@ public:
           end = teardown_timestamp.value();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
         durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
-        bar.tick();
+        if (show_console_output) {
+          bar.tick();
+        }
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
@@ -237,9 +240,11 @@ public:
       if (elapsed_time > benchmark_time_) {
         break;
       } else {
-        const auto percentage_completed = elapsed_time / benchmark_time_;
-        const auto new_bar_progress = percentage_completed * total_number_of_iterations;
-        bar.set_progress(new_bar_progress);
+        if (show_console_output) {
+          const auto percentage_completed = elapsed_time / benchmark_time_;
+          const auto new_bar_progress = percentage_completed * total_number_of_iterations;
+          bar.set_progress(new_bar_progress);
+        }
       }
     }
 
@@ -264,13 +269,15 @@ public:
 
     results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
 
-    bar.set_progress(total_number_of_iterations);
-    bar.mark_as_completed();
+    if (show_console_output) {
+      bar.set_progress(total_number_of_iterations);
+      bar.mark_as_completed();
 
-    // Show console cursor
-    show_console_cursor(true);
+      // Show console cursor
+      show_console_cursor(true);
 
-    console_writer::write_result(benchmark_result);
+      console_writer::write_result(benchmark_result);
+    }
   }
 };
 
