@@ -169,6 +169,10 @@ INVOKE_BENCHMARK_FOR_EACH(ConstructSharedPtr,
 CRITERION_BENCHMARK_MAIN()
 ```
 
+<p align="center">
+  <img height="550" src="img/make_shared.gif"/>  
+</p> 
+
 ### CRITERION_BENCHMARK_MAIN
 
 `CRITERION_BENCHMARK_MAIN()` provides a main function that:
