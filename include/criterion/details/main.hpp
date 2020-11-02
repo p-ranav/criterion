@@ -28,8 +28,11 @@ struct options {
     std::string filename;
   };
 
-  // Lists available benchmarks
+  // List available benchmarks
   std::optional<bool> list = false;
+
+  // List available benchmarks, filtered by user-provided regex string
+  std::optional<std::string> list_filtered;
 
   // --export_results csv result.csv
   // --export_results json foo.json
@@ -45,7 +48,7 @@ struct options {
 }
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, list, export_results, help, remaining);
+STRUCTOPT(criterion::options, list, list_filtered, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) { 
   const auto program_name = argv[0];
@@ -66,6 +69,10 @@ static inline int criterion_main(int argc, char *argv[]) {
     }
     else if (options.list.value() == true) {
       criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
+      exit(0);
+    }
+    else if (options.list_filtered.has_value()) {
+      criterion::benchmark_registration_helper_struct::list_filtered_registered_benchmarks(options.list_filtered.value());
       exit(0);
     }
     else if (!options.remaining.empty()) {

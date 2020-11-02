@@ -4,6 +4,7 @@
 #include <criterion/details/benchmark_config.hpp>
 #include <criterion/details/csv_writer.hpp>
 #include <functional>
+#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -29,6 +30,18 @@ struct benchmark_registration_helper_struct {
   static void list_registered_benchmarks() {
     for (const auto &config : registered_benchmarks()) {
       std::cout << config.name << config.parameterized_instance_name << "\n";
+    }
+  }
+
+  static void list_filtered_registered_benchmarks(const std::string& regex_string) {
+    std::regex regexp(regex_string);
+    std::smatch matches;
+    for (const auto &config : registered_benchmarks()) {
+      const auto benchmark_instance_name = config.name + config.parameterized_instance_name;
+      std::regex_search(benchmark_instance_name, matches, regexp);
+      if (!matches.empty()) {
+        std::cout << benchmark_instance_name << "\n";
+      }
     }
   }
 };
