@@ -58,8 +58,8 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, warmup, list, list_filtered, run_filtered, export_results, quiet, help,
-          remaining);
+STRUCTOPT(criterion::options, warmup, list, list_filtered, run_filtered, export_results, quiet,
+          help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];
@@ -89,12 +89,16 @@ static inline int criterion_main(int argc, char *argv[]) {
       std::cout << "Error: Unrecognized argument \"";
       std::cout << options.remaining[0];
       std::cout << "\"" << termcolor::reset << "\n";
-      print_criterion_help(program_name);
       exit(1);
     }
 
     if (options.warmup.has_value()) {
-      criterion::benchmark::warmup_runs = options.warmup.value();
+      const auto warmup = options.warmup.value();
+      if (warmup > 0) {
+        criterion::benchmark::warmup_runs = options.warmup.value();
+      } else {
+        criterion::benchmark::warmup_runs = 1;
+      }
     }
 
     if (options.quiet.value() == true) {

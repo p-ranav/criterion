@@ -21,15 +21,16 @@ static inline void print_criterion_help(const std::string &program_name) {
             << "[" << termcolor::bold << "-h,--help" << termcolor::reset << "] ";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
-  std::cout << "     This microbenchmarking utility repeatedly executes a list of benchmarks,\n   "
-               "  statistically analyzing the temporal behavior of code.\n";
+  std::cout
+      << "     This microbenchmarking utility repeatedly executes a list of benchmarks,\n   "
+         "  statistically analyzing and reporting on the temporal behavior of the executed code.\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     -w,--warmup " << termcolor::reset 
-            << termcolor::underline << "number" << termcolor::reset
-            << "\n";
-  std::cout << "          Number of warmup runs to execute before the benchmark\n";
+  std::cout << termcolor::bold << "     -w,--warmup " << termcolor::reset << termcolor::underline
+            << "number" << termcolor::reset << "\n";
+  std::cout << "          Number of warmup runs (at least 1) to execute before the benchmark "
+               "(default=3)\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";

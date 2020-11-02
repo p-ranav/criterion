@@ -52,7 +52,7 @@ class benchmark {
   long double estimate_execution_time() {
     using namespace std::chrono;
 
-    long double result;
+    long double result = 0;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs; i++) {
       std::chrono::steady_clock::time_point start_timestamp;

@@ -2650,7 +2650,6 @@ public:
 
 } // namespace indicators
 
-
 #pragma once
 #include <chrono>
 #include <functional>
@@ -3000,7 +2999,7 @@ class benchmark {
   long double estimate_execution_time() {
     using namespace std::chrono;
 
-    long double result;
+    long double result = 0;
     bool first_run{true};
     for (std::size_t i = 0; i < warmup_runs; i++) {
       std::chrono::steady_clock::time_point start_timestamp;
@@ -3985,7 +3984,6 @@ struct benchmark_template_registration_helper_struct {
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
-
 
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
@@ -6926,7 +6924,6 @@ public:
 
 } // namespace structopt
 
-
 #pragma once
 // #include <criterion/details/indicators.hpp>
 #include <sstream>
@@ -6950,15 +6947,16 @@ static inline void print_criterion_help(const std::string &program_name) {
             << "[" << termcolor::bold << "-h,--help" << termcolor::reset << "] ";
   std::cout << "\n";
   std::cout << termcolor::bold << "DESCRIPTION\n" << termcolor::reset;
-  std::cout << "     This microbenchmarking utility repeatedly executes a list of benchmarks,\n   "
-               "  statistically analyzing the temporal behavior of code.\n";
+  std::cout
+      << "     This microbenchmarking utility repeatedly executes a list of benchmarks,\n   "
+         "  statistically analyzing and reporting on the temporal behavior of the executed code.\n";
   std::cout << "\n";
   std::cout << "     The options are as follows:\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     -w,--warmup " << termcolor::reset 
-            << termcolor::underline << "number" << termcolor::reset
-            << "\n";
-  std::cout << "          Number of warmup runs to execute before the benchmark\n";
+  std::cout << termcolor::bold << "     -w,--warmup " << termcolor::reset << termcolor::underline
+            << "number" << termcolor::reset << "\n";
+  std::cout << "          Number of warmup runs (at least 1) to execute before the benchmark "
+               "(default=3)\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";
@@ -7055,8 +7053,8 @@ struct options {
 } // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, warmup, list, list_filtered, run_filtered, export_results, quiet, help,
-          remaining);
+STRUCTOPT(criterion::options, warmup, list, list_filtered, run_filtered, export_results, quiet,
+          help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];
@@ -7086,12 +7084,16 @@ static inline int criterion_main(int argc, char *argv[]) {
       std::cout << "Error: Unrecognized argument \"";
       std::cout << options.remaining[0];
       std::cout << "\"" << termcolor::reset << "\n";
-      print_criterion_help(program_name);
       exit(1);
     }
 
     if (options.warmup.has_value()) {
-      criterion::benchmark::warmup_runs = options.warmup.value();
+      const auto warmup = options.warmup.value();
+      if (warmup > 0) {
+        criterion::benchmark::warmup_runs = options.warmup.value();
+      } else {
+        criterion::benchmark::warmup_runs = 1;
+      }
     }
 
     if (options.quiet.value() == true) {
@@ -7139,4 +7141,3 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
-
