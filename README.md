@@ -244,8 +244,7 @@ foo@bar:~$ cat results.json
     {
       "name": "VectorSort/10",
       "warmup_runs": 3,
-      "benchmark_runs": 333333,
-      "iterations_per_run": 10,
+      "iterations": 3333330,
       "best_estimate_mean_execution_time": 3,
       "best_estimate_rsd": 0.00,
       "overall_best_execution_time": 1,
@@ -254,8 +253,7 @@ foo@bar:~$ cat results.json
     {
       "name": "VectorSort/100",
       "warmup_runs": 3,
-      "benchmark_runs": 303030,
-      "iterations_per_run": 10,
+      "iterations": 3030300,
       "best_estimate_mean_execution_time": 82,
       "best_estimate_rsd": 3.80,
       "overall_best_execution_time": 74,
@@ -264,8 +262,7 @@ foo@bar:~$ cat results.json
     {
       "name": "VectorSort/1000",
       "warmup_runs": 3,
-      "benchmark_runs": 116550,
-      "iterations_per_run": 10,
+      "iterations": 1165500,
       "best_estimate_mean_execution_time": 653,
       "best_estimate_rsd": 0.77,
       "overall_best_execution_time": 641,
@@ -274,8 +271,7 @@ foo@bar:~$ cat results.json
     {
       "name": "VectorSort/10000",
       "warmup_runs": 3,
-      "benchmark_runs": 25464,
-      "iterations_per_run": 10,
+      "iterations": 254640,
       "best_estimate_mean_execution_time": 6296,
       "best_estimate_rsd": 0.11,
       "overall_best_execution_time": 6275,
