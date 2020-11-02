@@ -815,7 +815,7 @@ public:
     //           << result.num_iterations * result.num_runs
     //           << termcolor::reset << "\n";
 
-    std::cout << "      " << result.num_runs << " runs, "
+    std::cout << "      " << result.num_runs << (result.num_runs > 1 ? " runs, " : " run, ")
               << result.num_iterations << " iterations per run\n";
 
     std::cout << "    " 
@@ -1054,7 +1054,7 @@ class benchmark {
     auto min_runs = 1;
 
     if (early_estimate_execution_time <= 100) { // 100ns
-      benchmark_time_ = 1e+9; // one second
+      benchmark_time_ = 5e+8; // 500 ms
     }
     else if (early_estimate_execution_time <= 1000) { // 1us
       benchmark_time_ = 1e+9; // one second
@@ -1109,8 +1109,8 @@ public:
 
     long double fastest_execution_time = 0;
     long double slowest_execution_time = 0;
-    std::vector<long double> means_in_each_iteration{};
-    means_in_each_iteration.reserve(max_num_runs_);
+    std::vector<long double> mean_in_each_run{};
+    mean_in_each_run.reserve(max_num_runs_);
 
     std::size_t num_runs = 0;
     std::array<long double, num_iterations_> durations;
@@ -1142,7 +1142,7 @@ public:
       const long double relative_standard_deviation = standard_deviation * 100 / mean;
 
       const auto mean_in_this_run = std::accumulate(durations.begin(), durations.end(), 0.0) / num_iterations_;
-      means_in_each_iteration.push_back(mean_in_this_run);
+      mean_in_each_run.push_back(mean_in_this_run);
 
       if (first_run) {
         lowest_rsd = relative_standard_deviation;
@@ -1180,6 +1180,8 @@ public:
         slowest_execution_time = std::max(slowest_execution_time, current_worst_execution_time);
       }
 
+      num_runs += 1;
+
       if (num_runs >= max_num_runs_) {
         break;
       }
@@ -1189,11 +1191,9 @@ public:
       if (elapsed_time > benchmark_time_) {
         break;
       }
-
-      num_runs += 1;
     }
 
-    const auto mean_execution_time = (std::accumulate(means_in_each_iteration.begin(), means_in_each_iteration.end(), 0.0) / max_num_runs_);
+    const auto mean_execution_time = (std::accumulate(mean_in_each_run.begin(), mean_in_each_run.end(), 0.0) / num_runs);
 
     const auto benchmark_result = 
       criterion::benchmark_result{
