@@ -33,7 +33,7 @@ struct benchmark_registration_helper_struct {
     }
   }
 
-  static void list_filtered_registered_benchmarks(const std::string& regex_string) {
+  static void list_filtered_registered_benchmarks(const std::string &regex_string) {
     std::regex regexp(regex_string);
     std::smatch matches;
     for (const auto &config : registered_benchmarks()) {
@@ -45,7 +45,7 @@ struct benchmark_registration_helper_struct {
     }
   }
 
-  static void execute_filtered_registered_benchmarks(const std::string& regex_string) {
+  static void execute_filtered_registered_benchmarks(const std::string &regex_string) {
     std::regex regexp(regex_string);
     std::smatch matches;
     for (const auto &config : registered_benchmarks()) {
@@ -108,7 +108,7 @@ struct benchmark_template_registration_helper_struct {
   /* forward declare the benchmark function that we define later */                                \
   template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
   struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
-    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                           \
         std::chrono::steady_clock::time_point &,                                                   \
         std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
   };                                                                                               \
@@ -158,7 +158,7 @@ struct benchmark_template_registration_helper_struct {
   /* forward declare the benchmark function that we define later */                                \
   template <class T = CONCAT(Name, BenchmarkParameters)>                                           \
   struct CONCAT(Name, CONCAT(__benchmark_function_wrapper__, __LINE__)) {                          \
-    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                                  \
+    static inline void CONCAT(Name, CONCAT(_registered_fun_, __LINE__))(                           \
         std::chrono::steady_clock::time_point &,                                                   \
         std::optional<std::chrono::steady_clock::time_point> &, void *);                           \
   };                                                                                               \
@@ -265,7 +265,7 @@ struct benchmark_template_registration_helper_struct {
               BENCHMARK_4(__VA_ARGS__), BENCHMARK_3(__VA_ARGS__), BENCHMARK_2(__VA_ARGS__),        \
               BENCHMARK_1(__VA_ARGS__))
 
-#define INVOKE_BENCHMARK(TemplateName, InstanceName, ...)                                        \
+#define INVOKE_BENCHMARK(TemplateName, InstanceName, ...)                                          \
                                                                                                    \
   namespace /* ensure internal linkage for struct */                                               \
   {                                                                                                \
@@ -286,7 +286,7 @@ struct benchmark_template_registration_helper_struct {
 #define GET_FIRST(first, ...) first
 #define GET_REST(first, ...) __VA_ARGS__
 
-#define INVOKE_BENCHMARK_N(TemplateName, Index, PackedArgument)                                  \
+#define INVOKE_BENCHMARK_N(TemplateName, Index, PackedArgument)                                    \
                                                                                                    \
   namespace /* ensure internal linkage for struct */                                               \
   {                                                                                                \
@@ -582,11 +582,10 @@ struct benchmark_template_registration_helper_struct {
       16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
 #define FOR_EACH_(N, what, first, x, ...) CONCATENATE(FOR_EACH_, N)(what, first, x, __VA_ARGS__)
-#define FOR_EACH(what, first, ...)                                                              \
-  FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, first, __VA_ARGS__)
+#define FOR_EACH(what, first, ...) FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, first, __VA_ARGS__)
 
-#define INVOKE_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                               \
+#define INVOKE_BENCHMARK_FOR_EACH_HELPER(Index, TemplateName, ...)                                 \
   INVOKE_BENCHMARK_N(TemplateName, Index, PASS_PARAMETERS(__VA_ARGS__))
 
-#define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                             \
+#define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)

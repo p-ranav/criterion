@@ -10,11 +10,11 @@ struct benchmark_result {
   std::size_t num_runs;
   std::size_t num_iterations;
 
-  long double lowest_rsd; // Lowest relative standard deviation (RSD)
-  long double lowest_rsd_mean; // mean @ lowest RSD
+  long double lowest_rsd;       // Lowest relative standard deviation (RSD)
+  long double lowest_rsd_mean;  // mean @ lowest RSD
   std::size_t lowest_rsd_index; // which run had the lowest RSD best estimate
 
-  long double mean_execution_time; // global mean execution time
+  long double mean_execution_time;    // global mean execution time
   long double fastest_execution_time; // global best execution time
   long double slowest_execution_time; // global worst execution time
 
@@ -25,20 +25,11 @@ struct benchmark_result {
   std::string to_csv() const {
     std::stringstream os;
 
-    os << '"' << name 
-       << "\",";
-    os << std::fixed
-       << num_warmup_runs 
-       << ','
-       << num_runs * num_iterations
-       << ','
-       << std::setprecision(0) << mean_execution_time
-       << ','
-       << std::setprecision(2) << lowest_rsd
-       << ','
-       << std::setprecision(0) << fastest_execution_time
-       << ','
-       << std::setprecision(0) << slowest_execution_time;
+    os << '"' << name << "\",";
+    os << std::fixed << num_warmup_runs << ',' << num_runs * num_iterations << ','
+       << std::setprecision(0) << mean_execution_time << ',' << std::setprecision(2) << lowest_rsd
+       << ',' << std::setprecision(0) << fastest_execution_time << ',' << std::setprecision(0)
+       << slowest_execution_time;
 
     return os.str();
   }
@@ -52,8 +43,10 @@ struct benchmark_result {
     os << "      \"iterations\": " << num_runs * num_iterations << ",\n";
     os << "      \"mean_execution_time\": " << std::setprecision(0) << mean_execution_time << ",\n";
     os << "      \"best_estimate_rsd\": " << std::setprecision(2) << lowest_rsd << ",\n";
-    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time << ",\n";
-    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time << "\n";
+    os << "      \"fastest_execution_time\": " << std::setprecision(0) << fastest_execution_time
+       << ",\n";
+    os << "      \"slowest_execution_time\": " << std::setprecision(0) << slowest_execution_time
+       << "\n";
     os << "    }";
 
     return os.str();

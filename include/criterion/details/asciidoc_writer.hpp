@@ -1,12 +1,12 @@
 #pragma once
-#include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/benchmark.hpp>
+#include <criterion/details/benchmark_result.hpp>
 #include <ctime>
-#include <iomanip>
 #include <fstream>
-#include <unordered_map>
+#include <iomanip>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 namespace criterion {
 
@@ -21,15 +21,18 @@ public:
       std::time_t t = std::time(nullptr);
       os << ".Criterion Benchmark Results (" << std::put_time(std::gmtime(&t), "%c %Z") << ")\n";
       os << "[cols=\"<,>,>,>,>,>,>\", options=\"header\"]\n";
-      os << "|==========================================================================================================================================================\n";
-      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
+      os << "|====================================================================================="
+            "=====================================================================\n";
+      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) "
+            "| Overall Best Execution Time (ns) | Overall Worst Execution Time (ns)\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
-        const auto& this_result = results.at(name);
+        const auto &this_result = results.at(name);
         os << this_result.to_md();
         os << "\n";
       }
-      os << "|==========================================================================================================================================================\n";
+      os << "|====================================================================================="
+            "=====================================================================\n";
       result = true;
     }
     os.close();
