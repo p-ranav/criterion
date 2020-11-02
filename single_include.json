@@ -2,7 +2,7 @@
     "project": "Microbenchmarking for Modern C++",
     "target": "single_include/criterion/criterion.hpp",
     "sources": [
-        "include/criterion/details/termcolor.hpp",
+        "include/criterion/details/indicators.hpp",
         "include/criterion/details/benchmark_config.hpp",
         "include/criterion/details/console_writer.hpp",
         "include/criterion/details/benchmark_result.hpp",

@@ -1,11 +1,11 @@
 #pragma once
-#include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/benchmark.hpp>
-#include <iomanip>
+#include <criterion/details/benchmark_result.hpp>
 #include <fstream>
-#include <unordered_map>
+#include <iomanip>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 namespace criterion {
 
@@ -17,11 +17,13 @@ public:
     std::ofstream os(filename);
     if (os.is_open()) {
 
-      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) | Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
-      os << "|------|------------:|-----------:|-------------------------:|----------------------:|---------------------------------:|----------------------------------:|\n";
+      os << "| Name | Warmup Runs | Iterations | Mean Execution Time (ns) | Best Estimate RSD (%) "
+            "| Overall Best Execution Time (ns) | Overall Worst Execution Time (ns) |\n";
+      os << "|------|------------:|-----------:|-------------------------:|----------------------:|"
+            "---------------------------------:|----------------------------------:|\n";
 
       for (const auto &name : benchmark::benchmark_execution_order) {
-        const auto& this_result = results.at(name);
+        const auto &this_result = results.at(name);
         os << this_result.to_md();
         os << "\n";
       }

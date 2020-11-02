@@ -7,19 +7,19 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <unordered_map>
 #include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <criterion/details/benchmark_config.hpp>
 #include <criterion/details/benchmark_result.hpp>
-#include <criterion/details/termcolor.hpp>
 #include <criterion/details/console_writer.hpp>
+#include <criterion/details/indicators.hpp>
 
 namespace criterion {
 
@@ -80,26 +80,22 @@ class benchmark {
 
     auto min_runs = 2;
 
-    if (early_estimate_execution_time <= 100) { // 100ns
-      benchmark_time_ = 5e+8; // 500 ms
-    }
-    else if (early_estimate_execution_time <= 1000) { // 1us
-      benchmark_time_ = 1e+9; // one second
-    }
-    else if (early_estimate_execution_time <= 100000) { // 100us
-      benchmark_time_ = 2e+9; // two seconds
-    }
-    else if (early_estimate_execution_time <= 1000000) { // 1ms
-      benchmark_time_ = 5e+9; // 5 seconds
-    }
-    else if (early_estimate_execution_time <= 100000000) { // 100ms
-      benchmark_time_ = 7.5e+9; // 7.5 seconds
-    }
-    else {
+    if (early_estimate_execution_time <= 100) {              // 100ns
+      benchmark_time_ = 5e+8;                                // 500 ms
+    } else if (early_estimate_execution_time <= 1000) {      // 1us
+      benchmark_time_ = 1e+9;                                // one second
+    } else if (early_estimate_execution_time <= 100000) {    // 100us
+      benchmark_time_ = 2e+9;                                // two seconds
+    } else if (early_estimate_execution_time <= 1000000) {   // 1ms
+      benchmark_time_ = 5e+9;                                // 5 seconds
+    } else if (early_estimate_execution_time <= 100000000) { // 100ms
+      benchmark_time_ = 7.5e+9;                              // 7.5 seconds
+    } else {
       benchmark_time_ = min_benchmark_time_;
     }
 
-    benchmark_time_ = std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
+    benchmark_time_ =
+        std::max(early_estimate_execution_time * min_runs * num_iterations_, benchmark_time_);
     const auto total_iterations = size_t(benchmark_time_) / early_estimate_execution_time;
     max_num_runs_ = std::max(size_t(total_iterations / num_iterations_), size_t(min_runs));
   }
@@ -125,6 +121,8 @@ public:
     // Update number of iterations to run for this benchmark based on estimate
     update_iterations();
 
+    const auto total_number_of_iterations = max_num_runs_ * num_iterations_;
+
     long double lowest_rsd = 100;
     long double lowest_rsd_mean = 0;
     std::size_t lowest_rsd_index = 0;
@@ -137,6 +135,22 @@ public:
 
     std::size_t num_runs = 0;
     std::array<long double, num_iterations_> durations;
+
+    using namespace indicators;
+
+    // Hide cursor
+    show_console_cursor(false);
+
+    BlockProgressBar bar{option::BarWidth{50},
+                         option::Start{"["},
+                         option::End{"]"},
+                         option::ShowElapsedTime{true},
+                         option::ShowRemainingTime{true},
+                         option::ShowPercentage{true},
+                         option::ForegroundColor{Color::white},
+                         option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+                         option::MaxProgress{total_number_of_iterations},
+                         option::PrefixText{" > " + benchmark_instance_name + " "}};
 
     while (true) {
       // Benchmark runs
@@ -152,6 +166,7 @@ public:
           end = teardown_timestamp.value();
         const auto execution_time = duration_cast<std::chrono::nanoseconds>(end - start).count();
         durations[i] = std::abs(execution_time - estimated_minimum_measurement_cost);
+        bar.tick();
       }
       auto size = num_iterations_;
       const long double mean = std::accumulate(durations.begin(), durations.end(), 0.0) / size;
@@ -164,7 +179,8 @@ public:
       const long double standard_deviation = std::sqrt(variance);
       const long double relative_standard_deviation = standard_deviation * 100 / mean;
 
-      const auto mean_in_this_run = std::accumulate(durations.begin(), durations.end(), 0.0) / num_iterations_;
+      const auto mean_in_this_run =
+          std::accumulate(durations.begin(), durations.end(), 0.0) / num_iterations_;
       mean_in_each_run.push_back(mean_in_this_run);
 
       if (first_run) {
@@ -195,11 +211,13 @@ public:
         }
 
         // Save best and worst duration
-        const auto current_best_execution_time = *std::min_element(durations.begin(), durations.end());
+        const auto current_best_execution_time =
+            *std::min_element(durations.begin(), durations.end());
         if (current_best_execution_time > 0)
           fastest_execution_time = std::min(fastest_execution_time, current_best_execution_time);
 
-        const auto current_worst_execution_time = *std::max_element(durations.begin(), durations.end());
+        const auto current_worst_execution_time =
+            *std::max_element(durations.begin(), durations.end());
         slowest_execution_time = std::max(slowest_execution_time, current_worst_execution_time);
       }
 
@@ -210,16 +228,22 @@ public:
       }
 
       const auto now = std::chrono::steady_clock::now();
-      const auto elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(now - benchmark_start_timestamp).count();
+      const auto elapsed_time =
+          std::chrono::duration_cast<std::chrono::nanoseconds>(now - benchmark_start_timestamp)
+              .count();
       if (elapsed_time > benchmark_time_) {
         break;
+      } else {
+        const auto percentage_completed = elapsed_time / benchmark_time_;
+        const auto new_bar_progress = percentage_completed * total_number_of_iterations;
+        bar.set_progress(new_bar_progress);
       }
     }
 
-    const auto mean_execution_time = (std::accumulate(mean_in_each_run.begin(), mean_in_each_run.end(), 0.0) / num_runs);
+    const auto mean_execution_time =
+        (std::accumulate(mean_in_each_run.begin(), mean_in_each_run.end(), 0.0) / num_runs);
 
-    const auto benchmark_result = 
-      criterion::benchmark_result{
+    const auto benchmark_result = criterion::benchmark_result{
         .name = benchmark_instance_name,
         .num_warmup_runs = warmup_runs_,
         .num_runs = max_num_runs_,
@@ -232,11 +256,15 @@ public:
         .slowest_execution_time = slowest_execution_time,
         .average_iteration_performance = (1E9 / mean_execution_time),
         .fastest_iteration_performance = (1E9 / fastest_execution_time),
-        .slowest_iteration_performance = (1E9 / slowest_execution_time)
-      };
+        .slowest_iteration_performance = (1E9 / slowest_execution_time)};
 
     results.insert(std::make_pair(benchmark_instance_name, benchmark_result));
 
+    // bar.set_option(option::ForegroundColor(Color::green));
+    // bar.set_option(option::PrefixText{" ✓ " + benchmark_instance_name + " "});
+    bar.set_progress(total_number_of_iterations);
+    bar.mark_as_completed();
+    std::cout << std::flush;
     console_writer::write_result(benchmark_result);
   }
 };

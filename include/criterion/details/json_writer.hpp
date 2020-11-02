@@ -1,11 +1,11 @@
 #pragma once
-#include <criterion/details/benchmark_result.hpp>
 #include <criterion/details/benchmark.hpp>
-#include <iomanip>
+#include <criterion/details/benchmark_result.hpp>
 #include <fstream>
-#include <unordered_map>
+#include <iomanip>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 namespace criterion {
 
@@ -21,7 +21,7 @@ public:
 
       bool first{true};
       for (const auto &name : benchmark::benchmark_execution_order) {
-        const auto& this_result = results.at(name);
+        const auto &this_result = results.at(name);
         if (first) {
           first = false;
         } else {

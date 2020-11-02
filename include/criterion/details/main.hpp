@@ -1,13 +1,13 @@
 #pragma once
-#include <cstring>
-#include <criterion/details/termcolor.hpp>
-#include <criterion/details/macros.hpp>
-#include <criterion/details/structopt.hpp>
-#include <criterion/details/help.hpp>
-#include <criterion/details/csv_writer.hpp>
-#include <criterion/details/json_writer.hpp>
-#include <criterion/details/md_writer.hpp>
 #include <criterion/details/asciidoc_writer.hpp>
+#include <criterion/details/csv_writer.hpp>
+#include <criterion/details/help.hpp>
+#include <criterion/details/indicators.hpp>
+#include <criterion/details/json_writer.hpp>
+#include <criterion/details/macros.hpp>
+#include <criterion/details/md_writer.hpp>
+#include <criterion/details/structopt.hpp>
+#include <cstring>
 
 static inline void signal_handler(int signal) {
   std::cout << termcolor::reset;
@@ -48,19 +48,19 @@ struct options {
   std::vector<std::string> remaining;
 };
 
-}
+} // namespace criterion
 
 STRUCTOPT(criterion::options::export_options, format, filename);
 STRUCTOPT(criterion::options, list, list_filtered, run_filtered, export_results, help, remaining);
 
-static inline int criterion_main(int argc, char *argv[]) { 
+static inline int criterion_main(int argc, char *argv[]) {
   const auto program_name = argv[0];
 
-  std::signal(SIGTERM, signal_handler);                                                          
-  std::signal(SIGSEGV, signal_handler);                                                          
-  std::signal(SIGINT, signal_handler);                                                           
-  std::signal(SIGILL, signal_handler);                                                           
-  std::signal(SIGABRT, signal_handler);                                                          
+  std::signal(SIGTERM, signal_handler);
+  std::signal(SIGSEGV, signal_handler);
+  std::signal(SIGINT, signal_handler);
+  std::signal(SIGILL, signal_handler);
+  std::signal(SIGABRT, signal_handler);
   std::signal(SIGFPE, signal_handler);
 
   try {
@@ -69,16 +69,14 @@ static inline int criterion_main(int argc, char *argv[]) {
     if (options.help.value() == true) {
       print_criterion_help(program_name);
       exit(0);
-    }
-    else if (options.list.value() == true) {
+    } else if (options.list.value() == true) {
       criterion::benchmark_registration_helper_struct::list_registered_benchmarks();
       exit(0);
-    }
-    else if (options.list_filtered.has_value()) {
-      criterion::benchmark_registration_helper_struct::list_filtered_registered_benchmarks(options.list_filtered.value());
+    } else if (options.list_filtered.has_value()) {
+      criterion::benchmark_registration_helper_struct::list_filtered_registered_benchmarks(
+          options.list_filtered.value());
       exit(0);
-    }
-    else if (!options.remaining.empty()) {
+    } else if (!options.remaining.empty()) {
       std::cout << termcolor::bold << termcolor::red;
       std::cout << "Error: Unrecognized argument \"";
       std::cout << options.remaining[0];
@@ -89,42 +87,42 @@ static inline int criterion_main(int argc, char *argv[]) {
 
     // Run benchmarks
     if (options.run_filtered.has_value()) { // Run filtered
-      criterion::benchmark_registration_helper_struct::execute_filtered_registered_benchmarks(options.run_filtered.value());
+      criterion::benchmark_registration_helper_struct::execute_filtered_registered_benchmarks(
+          options.run_filtered.value());
     } else {
-      criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();   
+      criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();
     }
 
     if (options.export_results.has_value()) {
       auto export_options = options.export_results.value();
       if (export_options.format == criterion::options::export_options::format_type::csv) {
         // CSV export
-        criterion::csv_writer::write_results(export_options.filename, criterion::benchmark::results);
-      }
-      else if (export_options.format == criterion::options::export_options::format_type::json) {
+        criterion::csv_writer::write_results(export_options.filename,
+                                             criterion::benchmark::results);
+      } else if (export_options.format == criterion::options::export_options::format_type::json) {
         // JSON export
-        criterion::json_writer::write_results(export_options.filename, criterion::benchmark::results);
-      }
-      else if (export_options.format == criterion::options::export_options::format_type::md) {
+        criterion::json_writer::write_results(export_options.filename,
+                                              criterion::benchmark::results);
+      } else if (export_options.format == criterion::options::export_options::format_type::md) {
         // Markdown export
         criterion::md_writer::write_results(export_options.filename, criterion::benchmark::results);
-      }
-      else if (export_options.format == criterion::options::export_options::format_type::asciidoc) {
+      } else if (export_options.format ==
+                 criterion::options::export_options::format_type::asciidoc) {
         // Markdown export
-        criterion::asciidoc_writer::write_results(export_options.filename, criterion::benchmark::results);
+        criterion::asciidoc_writer::write_results(export_options.filename,
+                                                  criterion::benchmark::results);
       }
     }
 
-  } catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     const auto message = e.what();
     if (message && std::strlen(message) > 0)
       std::cout << termcolor::bold << termcolor::red << message << termcolor::reset << "\n";
     print_criterion_help(program_name);
     exit(1);
-  }                                                      
-  return 0;        
+  }
+  return 0;
 }
 
-#define CRITERION_BENCHMARK_MAIN(...)\
-  int main(int argc, char *argv[]) {\
-    criterion_main(argc, argv);\
-  }
+#define CRITERION_BENCHMARK_MAIN(...)                                                              \
+  int main(int argc, char *argv[]) { criterion_main(argc, argv); }
