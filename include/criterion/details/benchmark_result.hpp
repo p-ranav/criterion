@@ -44,7 +44,7 @@ struct benchmark_result {
        << "      \"iterations\": " << num_runs * num_iterations << ",\n"
        << "      \"mean_execution_time\": " << mean_execution_time << ",\n"
        << "      \"fastest_execution_time\": " << fastest_execution_time << ",\n"
-       << "      \"slowest_execution_time\": " << slowest_execution_time << "\n"
+       << "      \"slowest_execution_time\": " << slowest_execution_time << ",\n"
        << "      \"lowest_rsd_execution_time\": " << lowest_rsd_mean << ",\n"
        << "      \"lowest_rsd_percentage\": " << lowest_rsd << ",\n"
        << "      \"lowest_rsd_index\": " << lowest_rsd_index << ",\n"
