@@ -34,6 +34,9 @@ struct options {
   // List available benchmarks, filtered by user-provided regex string
   std::optional<std::string> list_filtered;
 
+  // Run filtered benchmarks, filtered by user-provided regex string
+  std::optional<std::string> run_filtered;
+
   // --export_results csv result.csv
   // --export_results json foo.json
   std::optional<export_options> export_results;
@@ -48,7 +51,7 @@ struct options {
 }
 
 STRUCTOPT(criterion::options::export_options, format, filename);
-STRUCTOPT(criterion::options, list, list_filtered, export_results, help, remaining);
+STRUCTOPT(criterion::options, list, list_filtered, run_filtered, export_results, help, remaining);
 
 static inline int criterion_main(int argc, char *argv[]) { 
   const auto program_name = argv[0];
@@ -85,7 +88,11 @@ static inline int criterion_main(int argc, char *argv[]) {
     }
 
     // Run benchmarks
-    criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();   
+    if (options.run_filtered.has_value()) { // Run filtered
+      criterion::benchmark_registration_helper_struct::execute_filtered_registered_benchmarks(options.run_filtered.value());
+    } else {
+      criterion::benchmark_registration_helper_struct::execute_registered_benchmarks();   
+    }
 
     if (options.export_results.has_value()) {
       auto export_options = options.export_results.value();

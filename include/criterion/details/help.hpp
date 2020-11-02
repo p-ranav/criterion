@@ -12,6 +12,7 @@ static inline void print_criterion_help(const std::string& program_name) {
   std::cout << termcolor::bold << "     " << program_name << " " << termcolor::reset 
             << "[" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << "] "
+            << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
             << "[" << termcolor::bold << "-e,--export_results" << termcolor::reset 
             << " {csv,json,md,asciidoc} <filename>]\n";
   std::cout << "\n";
@@ -24,8 +25,13 @@ static inline void print_criterion_help(const std::string& program_name) {
   std::cout << termcolor::bold << "     -l,--list " << termcolor::reset << "\n";
   std::cout << "          Print the list of available benchmarks\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --list_filtered " << termcolor::reset << "\n";
-  std::cout << "          Print the list of available benchmarks, filtered by user-provided regex\n";
+  std::cout << termcolor::bold << "     --list_filtered " << " "
+            << termcolor::underline << "filename" << termcolor::reset << "\n";
+  std::cout << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
+  std::cout << "\n";
+  std::cout << termcolor::bold << "     --run_filtered " << " "
+            << termcolor::underline << "filename" << termcolor::reset << "\n";
+  std::cout << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
   std::cout << termcolor::bold << "     -e,--export_results " << termcolor::reset 
             << termcolor::underline << "format" << termcolor::reset

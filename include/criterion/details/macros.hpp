@@ -44,6 +44,18 @@ struct benchmark_registration_helper_struct {
       }
     }
   }
+
+  static void execute_filtered_registered_benchmarks(const std::string& regex_string) {
+    std::regex regexp(regex_string);
+    std::smatch matches;
+    for (const auto &config : registered_benchmarks()) {
+      const auto benchmark_instance_name = config.name + config.parameterized_instance_name;
+      std::regex_search(benchmark_instance_name, matches, regexp);
+      if (!matches.empty()) {
+        benchmark{config}.run();
+      }
+    }
+  }
 };
 
 } // namespace criterion
