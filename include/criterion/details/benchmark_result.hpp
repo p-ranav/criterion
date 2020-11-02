@@ -27,10 +27,18 @@ struct benchmark_result {
     std::stringstream os;
 
     os << '"' << name << "\",";
-    os << std::fixed << num_warmup_runs << ',' << num_runs * num_iterations << ','
-       << std::setprecision(0) << mean_execution_time << ',' << std::setprecision(2) << lowest_rsd
-       << ',' << std::setprecision(0) << fastest_execution_time << ',' << std::setprecision(0)
-       << slowest_execution_time;
+    os << std::fixed << std::setprecision(2)
+       << num_warmup_runs << ','
+       << num_runs * num_iterations << ','
+       << mean_execution_time << ','
+       << fastest_execution_time << ','
+       << slowest_execution_time << ','
+       << lowest_rsd_mean << ','
+       << lowest_rsd << ','
+       << lowest_rsd_index << ','
+       << average_iteration_performance << ','
+       << fastest_iteration_performance << ','
+       << slowest_iteration_performance;
 
     return os.str();
   }
