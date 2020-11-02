@@ -782,7 +782,7 @@ class console_writer {
 public:
   static void write_result(const benchmark_result& result) {
     std::cout << termcolor::bold << termcolor::green
-              << "✓ "
+              << " ✓ "
               << result.name 
               << termcolor::reset 
               << "\n";
