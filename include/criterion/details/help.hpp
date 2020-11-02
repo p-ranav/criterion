@@ -14,7 +14,7 @@ static inline void print_criterion_help(const std::string &program_name) {
             << "[" << termcolor::bold << "-w,--warmup" << termcolor::reset << " <number>]\n"
             << "           [" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
-            << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
+            << "[" << termcolor::bold << "-r,--run_filtered" << termcolor::reset << " <regex>] "
             << "\n           [" << termcolor::bold << "-e,--export_results" << termcolor::reset
             << " {csv,json,md,asciidoc} <filename>]\n"
             << "           [" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
@@ -40,7 +40,7 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout
       << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset << termcolor::underline
+  std::cout << termcolor::bold << "     -r,--run_filtered " << termcolor::reset << termcolor::underline
             << "regex" << termcolor::reset << "\n";
   std::cout
       << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";

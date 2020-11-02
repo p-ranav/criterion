@@ -192,7 +192,7 @@ NAME
 SYNOPSIS
      ./benchmarks
            [-w,--warmup <number>]
-           [-l,--list] [--list_filtered <regex>] [--run_filtered <regex>]
+           [-l,--list] [--list_filtered <regex>] [-r,--run_filtered <regex>]
            [-e,--export_results {csv,json,md,asciidoc} <filename>]
            [-q,--quiet] [-h,--help]
 DESCRIPTION
@@ -210,7 +210,7 @@ DESCRIPTION
      --list_filtered regex
           Print a filtered list of available benchmarks (based on user-provided regex)
 
-     --run_filtered regex
+     -r,--run_filtered regex
           Run a filtered list of available benchmarks (based on user-provided regex)
 
      -e,--export_results format filename

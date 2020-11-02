@@ -2650,6 +2650,7 @@ public:
 
 } // namespace indicators
 
+
 #pragma once
 #include <chrono>
 #include <functional>
@@ -3984,6 +3985,7 @@ struct benchmark_template_registration_helper_struct {
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
+
 
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
@@ -6924,6 +6926,7 @@ public:
 
 } // namespace structopt
 
+
 #pragma once
 // #include <criterion/details/indicators.hpp>
 #include <sstream>
@@ -6940,7 +6943,7 @@ static inline void print_criterion_help(const std::string &program_name) {
             << "[" << termcolor::bold << "-w,--warmup" << termcolor::reset << " <number>]\n"
             << "           [" << termcolor::bold << "-l,--list" << termcolor::reset << "] "
             << "[" << termcolor::bold << "--list_filtered" << termcolor::reset << " <regex>] "
-            << "[" << termcolor::bold << "--run_filtered" << termcolor::reset << " <regex>] "
+            << "[" << termcolor::bold << "-r,--run_filtered" << termcolor::reset << " <regex>] "
             << "\n           [" << termcolor::bold << "-e,--export_results" << termcolor::reset
             << " {csv,json,md,asciidoc} <filename>]\n"
             << "           [" << termcolor::bold << "-q,--quiet" << termcolor::reset << "] "
@@ -6966,7 +6969,7 @@ static inline void print_criterion_help(const std::string &program_name) {
   std::cout
       << "          Print a filtered list of available benchmarks (based on user-provided regex)\n";
   std::cout << "\n";
-  std::cout << termcolor::bold << "     --run_filtered " << termcolor::reset << termcolor::underline
+  std::cout << termcolor::bold << "     -r,--run_filtered " << termcolor::reset << termcolor::underline
             << "regex" << termcolor::reset << "\n";
   std::cout
       << "          Run a filtered list of available benchmarks (based on user-provided regex)\n";
@@ -7141,3 +7144,4 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
+
