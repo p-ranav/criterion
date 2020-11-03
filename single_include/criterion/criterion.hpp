@@ -3986,6 +3986,8 @@ struct benchmark_template_registration_helper_struct {
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
 
+  
+
 
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
@@ -7144,4 +7146,6 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
+
+  
 
