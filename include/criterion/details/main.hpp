@@ -146,3 +146,5 @@ static inline int criterion_main(int argc, char *argv[]) {
 
 #define CRITERION_BENCHMARK_MAIN(...)                                                              \
   int main(int argc, char *argv[]) { criterion_main(argc, argv); }
+
+  

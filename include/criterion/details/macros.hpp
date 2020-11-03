@@ -589,3 +589,5 @@ struct benchmark_template_registration_helper_struct {
 
 #define INVOKE_BENCHMARK_FOR_EACH(TemplateName, ...)                                               \
   FOR_EACH(INVOKE_BENCHMARK_FOR_EACH_HELPER, TemplateName, __VA_ARGS__)
+
+  
