@@ -3,7 +3,7 @@
 </p> 
 
 <p align="center">
-  <img height="500" src="img/demo.gif"/>  
+  <img src="img/demo.gif"/>  
 </p> 
 
 ## Highlights
@@ -76,7 +76,7 @@ CRITERION_BENCHMARK_MAIN()
 ```
 
 <p align="center">
-  <img height="400" src="img/merge_sort_single.gif"/>  
+  <img height="300" src="img/merge_sort_single.gif"/>  
 </p> 
 
 What if we want to run this benchmark on a variety of sizes?
@@ -119,7 +119,7 @@ CRITERION_BENCHMARK_MAIN()
 ```
 
 <p align="center">
-  <img height="650" src="img/merge_sort_with_params.gif"/>  
+  <img height="600" src="img/merge_sort_with_params.gif"/>  
 </p> 
 
 ### Passing Arguments (Part 2)
@@ -170,7 +170,7 @@ CRITERION_BENCHMARK_MAIN()
 ```
 
 <p align="center">
-  <img height="550" src="img/make_shared.gif"/>  
+  <img src="img/make_shared.gif"/>  
 </p> 
 
 ### CRITERION_BENCHMARK_MAIN and Command-line Options
